@@ -1,0 +1,25 @@
+start with USPS
+- 2023 ltd and 2023 fmd
+
+final
+- llc tabs come from USPS 2023 fmd - dpfs llc
+- llc paid - DONE
+    - filtered out CC or HW from Type of Job Col
+    - filter for paid in the month
+    - if Awd col is empty then drop it
+    - look at final for cols to keep
+
+- llc outstanding
+    - filter for paid/closed that is blank
+    - billed date is not blank
+    - if difference from bill-paid is not 0 then it goes on the report
+
+- llc wip
+    - awd col has no blanks
+    - if balance due is 0 then exclude
+    - prev paid = paid
+    - if % is not 100
+    - Balance WIP is awarded amount - ( prev paid + outstanding )
+
+               
+- fs tabs comes from all sheets and ltd(fmd) and is the same process as llc
