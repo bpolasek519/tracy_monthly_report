@@ -1,5 +1,7 @@
 from openpyxl.styles import NamedStyle, Alignment, Border, Side
 
+SHEET_ROW_HEIGHT = 30
+
 # Creating the different formatting styles needed
 DATE_STYLE = NamedStyle(name='date_style', number_format='mm/dd/yy')
 DATE_STYLE.alignment = Alignment(horizontal='center')
@@ -82,3 +84,51 @@ STYLE_MAPPINGS = {
     '$ Outstanding': ACCOUNTING_STYLE,
     'Balance WIP': ACCOUNTING_STYLE
 }
+
+MONTH_TO_NUMBER = {
+    "January": 1,
+    "February": 2,
+    "March": 3,
+    "April": 4,
+    "May": 5,
+    "June": 6,
+    "July": 7,
+    "August": 8,
+    "September": 9,
+    "October": 10,
+    "November": 11,
+    "December": 12
+}
+
+MONTH_TO_ZERO_PADDED_NUMBER = {
+    "January": '01',
+    "February": '02',
+    "March": '03',
+    "April": '04',
+    "May": '05',
+    "June": '06',
+    "July": '07',
+    "August": '08',
+    "September": '09',
+    "October": '10',
+    "November": '11',
+    "December": '12'
+}
+
+MONTH_OPTIONS = [
+    "January", "February", "March", "April",
+    "May", "June", "July", "August",
+    "September", "October", "November", "December"
+]
+
+FS_PAID_LAST_ROW_COLS = ['Balance Due', 'Awd $', 'Bill $', '$ Previously Paid', '$ Paid']
+FS_PAID_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Paid/Closed', 'Awd $', 'Bill $', '$ Paid',
+                           'Balance Due', '%', 'Comment', '$ Previously Paid']
+
+FS_OUTSTANDING_LAST_ROW_COLS = ['Awd $', 'Bill $', '$ Paid', 'Balance Due']
+FS_OUTSTANDING_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', '$ Paid',
+                                  'Balance Due', '%', 'Comment']
+
+FS_WIP_LAST_ROW_COLS = ['Balance WIP', 'Awd $', 'Bill $', '$ Previously Paid', '$ Outstanding']
+FS_WIP_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', '$ Previously Paid',
+                          'Balance WIP', '%', '$ Outstanding']

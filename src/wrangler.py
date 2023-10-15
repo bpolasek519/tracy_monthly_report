@@ -1,34 +1,43 @@
+from typing import Callable
+
 import numpy as np
 import pandas as pd
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Border, Side, PatternFill, Font
-from openpyxl.utils import get_column_letter
-from src.constants import (CENTER_STYLE, PERCENTAGE_STYLE, DATE_STYLE, ACCOUNTING_STYLE, COLUMN_WIDTHS,
-                           ACCOUNTING_STYLE_NO_BORDER, NUMBER_STYLE, STYLE_MAPPINGS)
+from openpyxl.styles import Border, Side
+import src.constants as con
 import src.dataframe_helper as dh
+from src.excel_styles import apply_column_widths, set_style, header_settings, alternate_color_fill, \
+    center_style_the_headers, last_row_style, style_center_cols
 
 
 def create_llc_wip_sheet(df: pd.DataFrame, wb: Workbook) -> None:
+    """
+    Create an LLC USPS Work-In-Progress (WIP) sheet in an OpenPyXL Workbook.
+
+    This function creates an OpenPyXL sheet named 'LLC WIP' within the given Workbook.
+    It populates the sheet with data from the input DataFrame and applies various styles.
+
+    :param df: The input DataFrame containing data.
+    :param wb: The target Workbook where the sheet will be created.
+    """
+
+    # Create a DataFrame for WIP data
     final_df = dh.create_wip_df(df=df, title='LLC USPS WIP', for_fs=False)
 
+    # Create a new sheet within the Workbook
     ws = wb.create_sheet(title='LLC WIP')
 
-    center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
-
     # Setting a specified height to all the cells
-    ws.sheet_format.defaultRowHeight = 30
+    ws.sheet_format.defaultRowHeight = con.SHEET_ROW_HEIGHT
     ws.sheet_format.customHeight = True
 
-    # Applying styles based on the column
-    for col, col_name in enumerate(final_df.columns, start=1):
-        cell = ws.cell(row=1, column=col, value=col_name)
-        cell.style = CENTER_STYLE
-        cell.alignment = cell.alignment.copy(wrapText=True)
+    # Applying styles to headers
+    center_style_the_headers(final_df, ws)
 
-    # Apply the styling to the columns
+    # Map column names to their indices and apply styles
     col_names = final_df.columns
     col_indices = {}
-    for col_name, style in STYLE_MAPPINGS.items():
+    for col_name, style in con.STYLE_MAPPINGS.items():
         if col_name in col_names:
             col_idx = col_names.get_loc(col_name)
             col_indices[col_name] = col_idx
@@ -37,31 +46,22 @@ def create_llc_wip_sheet(df: pd.DataFrame, wb: Workbook) -> None:
             else:
                 set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx)
 
-    # This adds the accounting styling for the total sum row without adding anything else.
+    # Apply accounting style to the total sum row
     last_row = final_df.iloc[-1]
-
     last_row_style_cols = ['Balance WIP', 'Awd $', 'Bill $', '$ Previously Paid', '$ Outstanding']
-    for col in last_row_style_cols:
-        col_idx = final_df.columns.get_loc(col)
-        value = last_row[col]
-        cell = ws.cell(row=len(final_df) + 1, column=col_idx + 1, value=value)
-        cell.style = ACCOUNTING_STYLE_NO_BORDER
+    last_row_style(final_df, last_row, last_row_style_cols, ws)
 
-    for col_name in center_algined_cols:
-        col_idx = final_df.columns.get_loc(col_name) + 1
-        for row, value in enumerate(final_df[col_name][:-1], start=2):
-            cell = ws.cell(row=row, column=col_idx, value=value)
-            cell.style = CENTER_STYLE
+    # Apply center alignment style to specific columns
+    center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
+    style_center_cols(center_algined_cols, final_df, ws)
 
-    # This is the general styling for the cells
+    # Apply general styling to the cells in the sheet
+    excluded_columns = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', 'Contract Comp. Date',
+                        '$ Previously Paid', '%', '$ Outstanding', 'Balance WIP']
     for row, row_data in enumerate(final_df.itertuples(index=False), start=2):
         if row <= len(final_df):
             for col, value in enumerate(row_data[:-1], start=1):
-                if (col != col_indices['Awd'] + 1 and col != col_indices['Substantial Complete'] + 1 and
-                        col != col_indices['Billed Date'] + 1 and col != col_indices['Awd $'] + 1 and
-                        col != col_indices['Bill $'] + 1 and col != col_indices['Contract Comp. Date'] + 1
-                        and col != col_indices['$ Previously Paid'] + 1 and col != col_indices['%'] + 1 and
-                        col != col_indices['$ Outstanding'] + 1 and col != col_indices['Balance WIP'] + 1):
+                if col not in [col_indices[col_name] + 1 for col_name in excluded_columns]:
                     cell = ws.cell(row=row, column=col, value=value)
                     cell.border = Border(left=Side(border_style='thin'),
                                          right=Side(border_style='thin'),
@@ -71,34 +71,40 @@ def create_llc_wip_sheet(df: pd.DataFrame, wb: Workbook) -> None:
             for col, value in enumerate(row_data, start=1):
                 cell = ws.cell(row=row, column=col, value=value)
 
+    # Apply column widths, header settings, and alternate row color fill
     apply_column_widths(final_df, ws)
     header_settings(final_df, ws)
     alternate_color_fill(final_df, ws)
-
-    wb.save('data/test.xlsx')
 
 
 def create_llc_outstanding_sheet(df: pd.DataFrame, wb: Workbook) -> None:
+    """
+    Create an LLC USPS Outstanding sheet in an OpenPyXL Workbook.
+
+    This function creates an OpenPyXL sheet named 'LLC Outstanding' within the given Workbook.
+    It populates the sheet with data from the input DataFrame and applies various styles.
+
+    :param df: The input DataFrame containing data.
+    :param wb: The target Workbook where the sheet will be created.
+    """
+
+    # Create a DataFrame for Outstanding data
     final_df = dh.create_outstanding_df(df, title='LLC USPS Outstanding')
 
+    # Create a new sheet within the Workbook
     ws = wb.create_sheet(title='LLC Outstanding')
 
-    center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
-
     # Setting a specified height to all the cells
-    ws.sheet_format.defaultRowHeight = 30
+    ws.sheet_format.defaultRowHeight = con.SHEET_ROW_HEIGHT
     ws.sheet_format.customHeight = True
 
-    # Applying styles based on the column
-    for col, col_name in enumerate(final_df.columns, start=1):
-        cell = ws.cell(row=1, column=col, value=col_name)
-        cell.style = CENTER_STYLE
-        cell.alignment = cell.alignment.copy(wrapText=True)
+    # Applying styles to headers
+    center_style_the_headers(final_df, ws)
 
-    # Apply the styling to the columns
+    # Map column names to their indices and apply styles
     col_names = final_df.columns
     col_indices = {}
-    for col_name, style in STYLE_MAPPINGS.items():
+    for col_name, style in con.STYLE_MAPPINGS.items():
         if col_name in col_names:
             col_idx = col_names.get_loc(col_name)
             col_indices[col_name] = col_idx
@@ -107,31 +113,22 @@ def create_llc_outstanding_sheet(df: pd.DataFrame, wb: Workbook) -> None:
             else:
                 set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx)
 
-    # This adds the accounting styling for the total sum row without adding anything else.
+    # Apply accounting style to the total sum row
     last_row = final_df.iloc[-1]
-
     last_row_style_cols = ['Balance Due', 'Awd $', 'Bill $', '$ Paid']
-    for col in last_row_style_cols:
-        col_idx = final_df.columns.get_loc(col)
-        value = last_row[col]
-        cell = ws.cell(row=len(final_df) + 1, column=col_idx + 1, value=value)
-        cell.style = ACCOUNTING_STYLE_NO_BORDER
+    last_row_style(final_df, last_row, last_row_style_cols, ws)
 
-    for col_name in center_algined_cols:
-        col_idx = final_df.columns.get_loc(col_name) + 1
-        for row, value in enumerate(final_df[col_name][:-1], start=2):
-            cell = ws.cell(row=row, column=col_idx, value=value)
-            cell.style = CENTER_STYLE
+    # Apply center alignment style to specific columns
+    center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
+    style_center_cols(center_algined_cols, final_df, ws)
 
-    # This is the general styling for the cells
+    # Apply general styling to the cells in the sheet
+    excluded_columns = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', '$ Paid', 'Balance Due', '%',
+                        'Comment']
     for row, row_data in enumerate(final_df.itertuples(index=False), start=2):
         if row <= len(final_df):
             for col, value in enumerate(row_data[:-1], start=1):
-                if (col != col_indices['Awd'] + 1 and col != col_indices['Substantial Complete'] + 1 and
-                        col != col_indices['Billed Date'] + 1 and col != col_indices['Awd $'] + 1 and
-                        col != col_indices['Bill $'] + 1 and col != col_indices['$ Paid'] + 1
-                        and col != col_indices['Balance Due'] + 1 and col != col_indices['%'] + 1 and
-                        col != col_indices['Comment'] + 1):
+                if col not in [col_indices[col_name] + 1 for col_name in excluded_columns]:
                     cell = ws.cell(row=row, column=col, value=value)
                     cell.border = Border(left=Side(border_style='thin'),
                                          right=Side(border_style='thin'),
@@ -141,34 +138,40 @@ def create_llc_outstanding_sheet(df: pd.DataFrame, wb: Workbook) -> None:
             for col, value in enumerate(row_data, start=1):
                 cell = ws.cell(row=row, column=col, value=value)
 
+    # Apply column widths, header settings, and alternate row color fill
     apply_column_widths(final_df, ws)
     header_settings(final_df, ws)
     alternate_color_fill(final_df, ws)
 
-    wb.save('data/test.xlsx')
 
+def create_llc_paid_sheet(df: pd.DataFrame, wb: Workbook, month: str) -> None:
+    """
+    Create an LLC USPS Paid sheet in an OpenPyXL Workbook.
 
-def create_llc_paid_sheet(df: pd.DataFrame, wb: Workbook) -> None:
-    final_df = dh.create_paid_df(df, 'LLC USPS Paid')
+    This function creates an OpenPyXL sheet named 'LLC Paid' within the given Workbook.
+    It populates the sheet with data from the input DataFrame and applies various styles.
 
+    :param df: The input DataFrame containing data.
+    :param wb: The target Workbook where the sheet will be created.
+    """
+
+    # Create a DataFrame for Paid data
+    final_df = dh.create_paid_df(df, 'LLC USPS Paid', month=month)
+
+    # Create a new sheet within the Workbook
     ws = wb.create_sheet(title='LLC Paid')
 
-    center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
-
     # Setting a specified height to all the cells
-    ws.sheet_format.defaultRowHeight = 30
+    ws.sheet_format.defaultRowHeight = con.SHEET_ROW_HEIGHT
     ws.sheet_format.customHeight = True
 
-    # Applying styles based on the column
-    for col, col_name in enumerate(final_df.columns, start=1):
-        cell = ws.cell(row=1, column=col, value=col_name)
-        cell.style = CENTER_STYLE
-        cell.alignment = cell.alignment.copy(wrapText=True)
+    # Apply styles to headers
+    center_style_the_headers(final_df, ws)
 
-    # Apply the styling to the columns
+    # Map column names to their indices and apply styles
     col_names = final_df.columns
     col_indices = {}
-    for col_name, style in STYLE_MAPPINGS.items():
+    for col_name, style in con.STYLE_MAPPINGS.items():
         if col_name in col_names:
             col_idx = col_names.get_loc(col_name)
             col_indices[col_name] = col_idx
@@ -177,32 +180,22 @@ def create_llc_paid_sheet(df: pd.DataFrame, wb: Workbook) -> None:
             else:
                 set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx)
 
-    # This adds the accounting styling for the total sum row without adding anything else.
+    # Apply accounting style to the total sum row
     last_row = final_df.iloc[-1]
-
     last_row_style_cols = ['Balance Due', 'Awd $', 'Bill $', '$ Previously Paid', '$ Paid']
-    for col in last_row_style_cols:
-        col_idx = final_df.columns.get_loc(col)
-        value = last_row[col]
-        cell = ws.cell(row=len(final_df) + 1, column=col_idx + 1, value=value)
-        cell.style = ACCOUNTING_STYLE_NO_BORDER
+    last_row_style(final_df, last_row, last_row_style_cols, ws)
 
-    for col_name in center_algined_cols:
-        col_idx = final_df.columns.get_loc(col_name) + 1
-        for row, value in enumerate(final_df[col_name][:-1], start=2):
-            cell = ws.cell(row=row, column=col_idx, value=value)
-            cell.style = CENTER_STYLE
+    # Apply center alignment style to specific columns
+    center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
+    style_center_cols(center_algined_cols, final_df, ws)
 
-    # This is the general styling for the cells
+    # Apply general styling to the cells in the sheet
+    excluded_columns = ['Awd', 'Substantial Complete', 'Billed Date', 'Paid/Closed', 'Awd $', 'Bill $', '$ Paid',
+                        'Balance Due', '%', 'Comment', '$ Previously Paid']
     for row, row_data in enumerate(final_df.itertuples(index=False), start=2):
         if row <= len(final_df):
             for col, value in enumerate(row_data[:-1], start=1):
-                if (col != col_indices['Awd'] + 1 and col != col_indices['Substantial Complete'] + 1 and
-                        col != col_indices['Billed Date'] + 1 and col != col_indices['Paid/Closed'] + 1 and
-                        col != col_indices['Awd $'] + 1 and col != col_indices['Bill $'] + 1
-                        and col != col_indices['$ Paid'] + 1 and col != col_indices['$ Previously Paid'] + 1 and
-                        col != col_indices['Balance Due'] + 1 and col != col_indices['%'] + 1 and
-                        col != col_indices['Comment'] + 1):
+                if col not in [col_indices[col_name] + 1 for col_name in excluded_columns]:
                     cell = ws.cell(row=row, column=col, value=value)
                     cell.border = Border(left=Side(border_style='thin'),
                                          right=Side(border_style='thin'),
@@ -212,461 +205,160 @@ def create_llc_paid_sheet(df: pd.DataFrame, wb: Workbook) -> None:
             for col, value in enumerate(row_data, start=1):
                 cell = ws.cell(row=row, column=col, value=value)
 
+    # Apply column widths, header settings, and alternate row color fill
     apply_column_widths(final_df, ws)
     header_settings(final_df, ws)
     alternate_color_fill(final_df, ws)
 
-    wb.remove_sheet(wb.get_sheet_by_name('Sheet'))
-    wb.save('data/test.xlsx')
 
-
-def create_fs_paid_sheet(usps_df: pd.DataFrame, hcde_df: pd.DataFrame, misc_df: pd.DataFrame, buyboard_df: pd.DataFrame,
-                         pca_df: pd.DataFrame, friendswood_df: pd.DataFrame, wb: Workbook) -> None:
-    # Retrieving the Excel sheets needed and matching the column names and creating the paid tables
-    final_buyboard_df, final_friendswood_df, final_hcde_df, final_misc_df, final_pca_df, final_usps_df = (
-        clean_col_names(buyboard_df, friendswood_df, hcde_df, misc_df, pca_df, usps_df, func=dh.create_paid_df,
-                        name='Paid'))
-
-    # Create a blank row DataFrame with NaN values
-    blank_row = pd.DataFrame({col: [np.nan] for col in final_usps_df.columns})
-
-    # Merge the multiple dataframes and note where exlcuded rows are for styling. This includes the 'total' row,
-    # the blank row, and the next header row.
-    df_lists = [final_usps_df, final_misc_df, final_buyboard_df, final_hcde_df, final_pca_df, final_friendswood_df]
-    style_skipped_rows = []
-    total_rows = []
-    final_df = pd.DataFrame()
-    for df in df_lists:
-        if not df.empty:
-            if final_df.empty:
-                final_df = df
-                style_skipped_rows.append(len(final_df.index) - 1)
-                total_rows.append(len(final_df.index) - 1)
-                style_skipped_rows.append(len(final_df.index))
-                style_skipped_rows.append(len(final_df.index) + 1)
-            else:
-                final_df = pd.concat([final_df, blank_row, df], ignore_index=True)
-                style_skipped_rows.append(len(final_df.index) - 1)
-                total_rows.append(len(final_df.index) - 1)
-                style_skipped_rows.append(len(final_df.index))
-                style_skipped_rows.append(len(final_df.index) + 1)
-        else:
-            continue
-
-    total_df = final_df.iloc[total_rows]
-
-    # Adds the total amount of money
-    awd_sum = total_df['Awd $'].sum()
-    bill_sum = total_df['Bill $'].sum()
-    prev_sum = total_df['$ Previously Paid'].sum()
-    paid_sum = total_df['$ Paid'].sum()
-    balance_due_sum = total_df['Balance Due'].sum()
-    total_row = {'Type: \nJOC, HB': f'Total Paid July 2023', 'Awd $': awd_sum, 'Bill $': bill_sum,
-                 '$ Previously Paid': prev_sum, '$ Paid': paid_sum, 'Balance Due': balance_due_sum}
-    total_row_df = pd.DataFrame(total_row, index=[0])
-    final_df = pd.concat([final_df, blank_row, total_row_df], ignore_index=True)
-
-    final_df.reset_index(drop=True, inplace=True)
-
-    ws = wb.create_sheet(title='FS Paid')
-
-    center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
-
-    # Setting a specified height to all the cells
-    ws.sheet_format.defaultRowHeight = 30
-    ws.sheet_format.customHeight = True
-
-    # Centers the header row
-    for col, col_name in enumerate(final_df.columns, start=1):
-        cell = ws.cell(row=1, column=col, value=col_name)
-        cell.style = CENTER_STYLE
-        cell.alignment = cell.alignment.copy(wrapText=True)
-
-    # Apply the styling to the columns
-    col_names = final_df.columns
-    col_indices = {}
-    for col_name, style in STYLE_MAPPINGS.items():
-        if col_name in col_names:
-            col_idx = col_names.get_loc(col_name)
-            col_indices[col_name] = col_idx
-            if col_name == 'Comment':
-                set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx, wrapText=True)
-            else:
-                set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx)
-
-    last_row_style_cols = ['Balance Due', 'Awd $', 'Bill $', '$ Previously Paid', '$ Paid']
-    for col in last_row_style_cols:
-        col_idx = final_df.columns.get_loc(col)
-        for row in style_skipped_rows[:-2]:
-            value = final_df.iloc[row, col_idx]
-            cell = ws.cell(row=row + 2, column=col_idx + 1, value=value)
-            cell.style = ACCOUNTING_STYLE_NO_BORDER
-        value = final_df.iloc[-1][col]
-        cell = ws.cell(row=len(final_df) + 1, column=col_idx + 1, value=value)
-        cell.style = ACCOUNTING_STYLE_NO_BORDER
-
-    for col_name in center_algined_cols:
-        col_idx = final_df.columns.get_loc(col_name) + 1
-        for row, value in enumerate(final_df[col_name][:-1], start=2):
-            cell = ws.cell(row=row, column=col_idx, value=value)
-            cell.style = CENTER_STYLE
-
-    # Need to shift the rows down 2 due to the way the Excel sheet locates them.
-    shifted_style_skipped_rows = [x + 2 for x in style_skipped_rows]
-    # This is the general styling for the cells
-    for row, row_data in enumerate(final_df.itertuples(index=False), start=2):
-        if row not in shifted_style_skipped_rows:
-            for col, value in enumerate(row_data, start=1):
-                if (col != col_indices['Awd'] + 1 and col != col_indices['Substantial Complete'] + 1 and
-                        col != col_indices['Billed Date'] + 1 and col != col_indices['Paid/Closed'] + 1 and
-                        col != col_indices['Awd $'] + 1 and col != col_indices['Bill $'] + 1
-                        and col != col_indices['$ Paid'] + 1 and col != col_indices['$ Previously Paid'] + 1 and
-                        col != col_indices['Balance Due'] + 1 and col != col_indices['%'] + 1 and
-                        col != col_indices['Comment'] + 1):
-                    cell = ws.cell(row=row, column=col, value=value)
-                    cell.border = Border(left=Side(border_style='thin'),
-                                         right=Side(border_style='thin'),
-                                         top=Side(border_style='thin'),
-                                         bottom=Side(border_style='thin'))
-        else:
-            for col, value in enumerate(row_data, start=1):
-                cell = ws.cell(row=row, column=col, value=value)
-
-    apply_column_widths(final_df, ws)
-    header_settings(final_df, ws, shifted_style_skipped_rows)
-    alternate_color_fill(final_df, ws, shifted_style_skipped_rows)
-
-    wb.save('data/test.xlsx')
-
-
-def create_fs_outstanding_sheet(usps_df: pd.DataFrame, hcde_df: pd.DataFrame, misc_df: pd.DataFrame,
-                                buyboard_df: pd.DataFrame, pca_df: pd.DataFrame, friendswood_df: pd.DataFrame,
-                                wb: Workbook) -> None:
-    # Retrieving the Excel sheets needed and matching the column names and creating the paid tables
-    final_buyboard_df, final_friendswood_df, final_hcde_df, final_misc_df, final_pca_df, final_usps_df = (
-        clean_col_names(buyboard_df, friendswood_df, hcde_df, misc_df, pca_df, usps_df, func=dh.create_outstanding_df,
-                        name='Outstanding'))
-
-    # Create a blank row DataFrame with NaN values
-    blank_row = pd.DataFrame({col: [np.nan] for col in final_usps_df.columns})
-
-    # Merge the multiple dataframes and note where exlcuded rows are for styling. This includes the 'total' row,
-    # the blank row, and the next header row.
-    df_lists = [final_usps_df, final_misc_df, final_buyboard_df, final_hcde_df, final_pca_df, final_friendswood_df]
-    style_skipped_rows = []
-    total_rows = []
-    final_df = pd.DataFrame()
-    for df in df_lists:
-        if not df.empty:
-            if final_df.empty:
-                final_df = df
-                style_skipped_rows.append(len(final_df.index) - 1)
-                total_rows.append(len(final_df.index) - 1)
-                style_skipped_rows.append(len(final_df.index))
-                style_skipped_rows.append(len(final_df.index) + 1)
-            else:
-                final_df = pd.concat([final_df, blank_row, df], ignore_index=True)
-                style_skipped_rows.append(len(final_df.index) - 1)
-                total_rows.append(len(final_df.index) - 1)
-                style_skipped_rows.append(len(final_df.index))
-                style_skipped_rows.append(len(final_df.index) + 1)
-        else:
-            continue
-
-    total_df = final_df.iloc[total_rows]
-
-    # Adds the total amount of money
-    awd_sum = total_df['Awd $'].sum()
-    bill_sum = total_df['Bill $'].sum()
-    paid_sum = total_df['$ Paid'].sum()
-    balance_due_sum = total_df['Balance Due'].sum()
-    total_row = {'Type: \nJOC, HB': f'Total Outstanding July 2023', 'Awd $': awd_sum, 'Bill $': bill_sum,
-                 '$ Paid': paid_sum, 'Balance Due': balance_due_sum}
-    total_row_df = pd.DataFrame(total_row, index=[0])
-    final_df = pd.concat([final_df, blank_row, total_row_df], ignore_index=True)
-
-    final_df.reset_index(drop=True, inplace=True)
-
-    ws = wb.create_sheet(title='FS Outstanding')
-
-    center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
-
-    # Setting a specified height to all the cells
-    ws.sheet_format.defaultRowHeight = 30
-    ws.sheet_format.customHeight = True
-
-    # Centers the header row
-    for col, col_name in enumerate(final_df.columns, start=1):
-        cell = ws.cell(row=1, column=col, value=col_name)
-        cell.style = CENTER_STYLE
-        cell.alignment = cell.alignment.copy(wrapText=True)
-
-    # Apply the styling to the columns
-    col_names = final_df.columns
-    col_indices = {}
-    for col_name, style in STYLE_MAPPINGS.items():
-        if col_name in col_names:
-            col_idx = col_names.get_loc(col_name)
-            col_indices[col_name] = col_idx
-            if col_name == 'Comment':
-                set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx, wrapText=True)
-            else:
-                set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx)
-
-    last_row_style_cols = ['Balance Due', 'Awd $', 'Bill $', '$ Paid']
-    for col in last_row_style_cols:
-        col_idx = final_df.columns.get_loc(col)
-        for row in style_skipped_rows[:-2]:
-            value = final_df.iloc[row, col_idx]
-            cell = ws.cell(row=row + 2, column=col_idx + 1, value=value)
-            cell.style = ACCOUNTING_STYLE_NO_BORDER
-        value = final_df.iloc[-1][col]
-        cell = ws.cell(row=len(final_df) + 1, column=col_idx + 1, value=value)
-        cell.style = ACCOUNTING_STYLE_NO_BORDER
-
-    for col_name in center_algined_cols:
-        col_idx = final_df.columns.get_loc(col_name) + 1
-        for row, value in enumerate(final_df[col_name][:-1], start=2):
-            cell = ws.cell(row=row, column=col_idx, value=value)
-            cell.style = CENTER_STYLE
-
-    # Need to shift the rows down 2 due to the way the Excel sheet locates them.
-    shifted_style_skipped_rows = [x + 2 for x in style_skipped_rows]
-    # This is the general styling for the cells
-    for row, row_data in enumerate(final_df.itertuples(index=False), start=2):
-        if row not in shifted_style_skipped_rows:
-            for col, value in enumerate(row_data, start=1):
-                if (col != col_indices['Awd'] + 1 and col != col_indices['Substantial Complete'] + 1 and
-                        col != col_indices['Billed Date'] + 1 and col != col_indices['Awd $'] + 1 and
-                        col != col_indices['Bill $'] + 1 and col != col_indices['$ Paid'] + 1
-                        and col != col_indices['Balance Due'] + 1 and col != col_indices['%'] + 1 and
-                        col != col_indices['Comment'] + 1):
-                    cell = ws.cell(row=row, column=col, value=value)
-                    cell.border = Border(left=Side(border_style='thin'),
-                                         right=Side(border_style='thin'),
-                                         top=Side(border_style='thin'),
-                                         bottom=Side(border_style='thin'))
-        else:
-            for col, value in enumerate(row_data, start=1):
-                cell = ws.cell(row=row, column=col, value=value)
-
-    apply_column_widths(final_df, ws)
-    header_settings(final_df, ws, shifted_style_skipped_rows)
-    alternate_color_fill(final_df, ws, shifted_style_skipped_rows)
-
-    wb.save('data/test.xlsx')
-
-
-def create_fs_wip_sheet(usps_df: pd.DataFrame, hcde_df: pd.DataFrame, misc_df: pd.DataFrame, buyboard_df: pd.DataFrame,
-                        pca_df: pd.DataFrame, friendswood_df: pd.DataFrame, wb: Workbook) -> None:
-    # Retrieving the Excel sheets needed and matching the column names and creating the paid tables
-    final_buyboard_df, final_friendswood_df, final_hcde_df, final_misc_df, final_pca_df, final_usps_df = (
-        clean_col_names(buyboard_df, friendswood_df, hcde_df, misc_df, pca_df, usps_df, func=dh.create_wip_df,
-                        name='WIP'))
-
-    # Create a blank row DataFrame with NaN values
-    blank_row = pd.DataFrame({col: [np.nan] for col in final_usps_df.columns})
-
-    # Merge the multiple dataframes and note where exlcuded rows are for styling. This includes the 'total' row,
-    # the blank row, and the next header row.
-    df_lists = [final_usps_df, final_misc_df, final_buyboard_df, final_hcde_df, final_pca_df, final_friendswood_df]
-    style_skipped_rows = []
-    total_rows = []
-    final_df = pd.DataFrame()
-    for df in df_lists:
-        if not df.empty:
-            if final_df.empty:
-                final_df = df
-                style_skipped_rows.append(len(final_df.index) - 1)
-                total_rows.append(len(final_df.index) - 1)
-                style_skipped_rows.append(len(final_df.index))
-                style_skipped_rows.append(len(final_df.index) + 1)
-            else:
-                final_df = pd.concat([final_df, blank_row, df], ignore_index=True)
-                style_skipped_rows.append(len(final_df.index) - 1)
-                total_rows.append(len(final_df.index) - 1)
-                style_skipped_rows.append(len(final_df.index))
-                style_skipped_rows.append(len(final_df.index) + 1)
-        else:
-            continue
-
-    total_df = final_df.iloc[total_rows]
-
-    # Adds the total amount of money
-    awd_sum = total_df['Awd $'].sum()
-    bill_sum = total_df['Bill $'].sum()
-    paid_sum = total_df['$ Previously Paid'].sum()
-    outstanding_sum = total_df['$ Outstanding'].sum()
-    balance_due_sum = total_df['Balance WIP'].sum()
-    total_row = {'Type: \nJOC, HB': f'Total WIP July 2023', 'Awd $': awd_sum, 'Bill $': bill_sum,
-                 '$ Previously Paid': paid_sum, '$ Outstanding': outstanding_sum, 'Balance WIP': balance_due_sum}
-    total_row_df = pd.DataFrame(total_row, index=[0])
-    final_df = pd.concat([final_df, blank_row, total_row_df], ignore_index=True)
-
-    final_df.reset_index(drop=True, inplace=True)
-
-    ws = wb.create_sheet(title='FS WIP')
-
-    center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
-
-    # Setting a specified height to all the cells
-    ws.sheet_format.defaultRowHeight = 30
-    ws.sheet_format.customHeight = True
-
-    # Centers the header row
-    for col, col_name in enumerate(final_df.columns, start=1):
-        cell = ws.cell(row=1, column=col, value=col_name)
-        cell.style = CENTER_STYLE
-        cell.alignment = cell.alignment.copy(wrapText=True)
-
-    # Apply the styling to the columns
-    col_names = final_df.columns
-    col_indices = {}
-    for col_name, style in STYLE_MAPPINGS.items():
-        if col_name in col_names:
-            col_idx = col_names.get_loc(col_name)
-            col_indices[col_name] = col_idx
-            if col_name == 'Comment':
-                set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx, wrapText=True)
-            else:
-                set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx)
-
-    last_row_style_cols = ['Balance WIP', 'Awd $', 'Bill $', '$ Previously Paid', '$ Outstanding']
-    for col in last_row_style_cols:
-        col_idx = final_df.columns.get_loc(col)
-        for row in style_skipped_rows[:-2]:
-            value = final_df.iloc[row, col_idx]
-            cell = ws.cell(row=row + 2, column=col_idx + 1, value=value)
-            cell.style = ACCOUNTING_STYLE_NO_BORDER
-        value = final_df.iloc[-1][col]
-        cell = ws.cell(row=len(final_df) + 1, column=col_idx + 1, value=value)
-        cell.style = ACCOUNTING_STYLE_NO_BORDER
-
-    for col_name in center_algined_cols:
-        col_idx = final_df.columns.get_loc(col_name) + 1
-        for row, value in enumerate(final_df[col_name][:-1], start=2):
-            cell = ws.cell(row=row, column=col_idx, value=value)
-            cell.style = CENTER_STYLE
-
-    # Need to shift the rows down 2 due to the way the Excel sheet locates them.
-    shifted_style_skipped_rows = [x + 2 for x in style_skipped_rows]
-    # This is the general styling for the cells
-    for row, row_data in enumerate(final_df.itertuples(index=False), start=2):
-        if row not in shifted_style_skipped_rows:
-            for col, value in enumerate(row_data, start=1):
-                if (col != col_indices['Awd'] + 1 and col != col_indices['Substantial Complete'] + 1 and
-                        col != col_indices['Billed Date'] + 1 and col != col_indices['Awd $'] + 1 and
-                        col != col_indices['Bill $'] + 1 and col != col_indices['$ Previously Paid'] + 1 and
-                        col != col_indices['%'] + 1 and col != col_indices['$ Outstanding'] + 1 and
-                        col != col_indices['Balance WIP'] + 1):
-                    cell = ws.cell(row=row, column=col, value=value)
-                    cell.border = Border(left=Side(border_style='thin'),
-                                         right=Side(border_style='thin'),
-                                         top=Side(border_style='thin'),
-                                         bottom=Side(border_style='thin'))
-        else:
-            for col, value in enumerate(row_data, start=1):
-                cell = ws.cell(row=row, column=col, value=value)
-
-    apply_column_widths(final_df, ws)
-    header_settings(final_df, ws, shifted_style_skipped_rows)
-    alternate_color_fill(final_df, ws, shifted_style_skipped_rows)
-
-    wb.save('data/test.xlsx')
-
-
-def clean_col_names(buyboard_df, friendswood_df, hcde_df, misc_df, pca_df, usps_df, func, name):
+def clean_col_names(buyboard_df, friendswood_df, hcde_df, misc_df, pca_df, usps_df, func, name, month):
     usps_df.rename(columns={'Facility Name': 'Client', 'Address': 'Location', '%': 'Billed %'}, inplace=True)
-    final_usps_df = func(usps_df, title=f'USPS {name}')
+    final_usps_df = func(usps_df, title=f'USPS {name}', month=month)
     hcde_df.rename(columns={'Type: JOC/HB': 'Type:  JOC, CC, HB', 'Contract ': 'Contract', 'Billed $': 'Bill $'},
                    inplace=True)
-    final_hcde_df = func(hcde_df, title=f'HCDE {name}')
+    final_hcde_df = func(hcde_df, title=f'HCDE {name}', month=month)
     misc_col_names = misc_df.columns
     misc_df.rename(columns={'Type:  JOC, HB': 'Type:  JOC, CC, HB', misc_col_names[1]: 'Contract', 'Client ': 'Client',
                             'Billed $': 'Bill $', 'Comments': 'Comment'}, inplace=True)
-    final_misc_df = func(misc_df, title=f'Misc. {name}')
+    final_misc_df = func(misc_df, title=f'Misc. {name}', month=month)
     buyboard_df.rename(columns={'JOC/HB': 'Type:  JOC, CC, HB', 'Billed $': 'Bill $', 'Comments': 'Comment'},
                        inplace=True)
-    final_buyboard_df = func(buyboard_df, title=f'Buyboard {name}')
+    final_buyboard_df = func(buyboard_df, title=f'Buyboard {name}', month=month)
     pca_df.rename(columns={'JOC/HB': 'Type:  JOC, CC, HB', 'Contract #': 'Contract', 'Billed $': 'Bill $'},
                   inplace=True)
-    final_pca_df = func(pca_df, title=f'PCA {name}')
+    final_pca_df = func(pca_df, title=f'PCA {name}', month=month)
     friendswood_df.rename(columns={'JOC/HB': 'Type:  JOC, CC, HB', 'Contract #': 'Contract', 'Billed $': 'Bill $',
                                    'Billed       %': 'Billed %'}, inplace=True)
-    final_friendswood_df = func(friendswood_df, title=f'Friendswood {name}')
+    final_friendswood_df = func(friendswood_df, title=f'Friendswood {name}', month=month)
     return final_buyboard_df, final_friendswood_df, final_hcde_df, final_misc_df, final_pca_df, final_usps_df
 
 
-def apply_column_widths(final_df, ws):
-    for header_name, width in COLUMN_WIDTHS.items():
-        col_letter = None
-        for col_idx, col in enumerate(final_df.columns, start=1):
-            if col == header_name:
-                col_letter = get_column_letter(col_idx)
-                break
-        if col_letter:
-            ws.column_dimensions[col_letter].width = width
-
-
-def set_style(df, ws, col_name, style, idx, wrapText: bool = False):
-    for row, value in enumerate(df[col_name][:-1], start=2):
-        cell = ws.cell(row=row, column=idx + 1, value=value)
-        cell.style = style
-        if wrapText:
-            cell.alignment = cell.alignment.copy(wrapText=True)
-
-
-def header_settings(df, ws, shifted_style_skipped_rows=None):
-    # This applies the header color of light yellow
-    if shifted_style_skipped_rows is None:
-        shifted_style_skipped_rows = []
-
-    header_fill_color = PatternFill(start_color="FFFF99", end_color="FFFF99", fill_type="solid")
-    for cell in ws[1]:
-        cell.fill = header_fill_color
-        cell.font = Font(bold=True)
-
-    if not shifted_style_skipped_rows:
-        for cell in ws[len(df.index) + 1]:
-            cell.font = Font(bold=True)
-            cell.alignment = Alignment(horizontal='left')
-    else:
-        for value in shifted_style_skipped_rows:
-            for cell in ws[value]:
-                cell.font = Font(bold=True)
-                cell.alignment = Alignment(horizontal='left')
-                cell.border = Border()
-    for cell in ws[2]:
-        cell.font = Font(bold=True)
-        cell.border = Border()
-        cell.alignment = Alignment(horizontal='left')
-
-
-def alternate_color_fill(df, ws, shifted_style_skipped_rows=None):
-    """
-    This function alternates a fill color for every other row. It excludes the header and the final row. If the sheet is
-    a merge of multiple dataframes, it also excludes all the total rows that are located using shifted_df_lengths.
-    :param df: The final dataframe to be written to the Excel sheet
-    :param ws: The Excel sheet.
-    :param shifted_style_skipped_rows: The rows to exclude. OPTIONAL.
-    """
-    if shifted_style_skipped_rows is None:
-        shifted_style_skipped_rows = []
-
-    fill_color = PatternFill(start_color='FFF2CC', end_color='FFF2CC', fill_type='solid')
-    for row_index, row in df.iloc[2:-1:2].iterrows():
-        if not shifted_style_skipped_rows:
-            for col_index, value in enumerate(row):
-                cell = ws.cell(row=row_index + 2, column=col_index + 1)  # +2 to account for 0-based index and header
-                cell.value = value
-                cell.fill = fill_color
-        else:
-            if row_index + 2 in shifted_style_skipped_rows:
-                for col_index, value in enumerate(row):
-                    cell = ws.cell(row=row_index + 2, column=col_index + 1)
-                    cell.value = value
+def retrieve_skipped_rows(blank_row, df_lists):
+    style_skipped_rows = []
+    total_rows = []
+    final_df = pd.DataFrame()
+    for df in df_lists:
+        if not df.empty:
+            if final_df.empty:
+                final_df = df
+                style_skipped_rows.append(len(final_df.index) - 1)
+                total_rows.append(len(final_df.index) - 1)
+                style_skipped_rows.append(len(final_df.index))
+                style_skipped_rows.append(len(final_df.index) + 1)
             else:
-                for col_index, value in enumerate(row):
-                    cell = ws.cell(row=row_index + 2, column=col_index + 1)
-                    cell.value = value
-                    cell.fill = fill_color
+                final_df = pd.concat([final_df, blank_row, df], ignore_index=True)
+                style_skipped_rows.append(len(final_df.index) - 1)
+                total_rows.append(len(final_df.index) - 1)
+                style_skipped_rows.append(len(final_df.index))
+                style_skipped_rows.append(len(final_df.index) + 1)
+        else:
+            continue
+    return final_df, style_skipped_rows, total_rows
+
+
+def create_fs_sheet(usps_df: pd.DataFrame, hcde_df: pd.DataFrame, misc_df: pd.DataFrame, buyboard_df: pd.DataFrame,
+                    pca_df: pd.DataFrame, friendswood_df: pd.DataFrame, wb: Workbook, month: str, year: str,
+                    fs_type: str, last_row_columns: list[str], columns_to_exclude_from_generic_styles: list[str],
+                    df_creation_func: Callable) -> None:
+    """
+    Create an FS Paid sheet in an OpenPyXL Workbook, combining data from multiple sources.
+
+    This function creates an OpenPyXL sheet named 'FS Paid' within the given Workbook, combining data from multiple
+    DataFrames and applying various styles.
+
+    :param df_creation_func: The function used to create the dataframe. Can be paid, outstanding, or wip.
+    :param columns_to_exclude_from_generic_styles: The list of columns that have special styling, so they aren't passed
+    into the generic styling.
+    :param last_row_columns: The list of columns in the last row.
+    :param fs_type: Paid, Outstanding, WIP
+    :param usps_df: USPS data DataFrame.
+    :param hcde_df: HCDE data DataFrame.
+    :param misc_df: Misc data DataFrame.
+    :param buyboard_df: Buyboard data DataFrame.
+    :param pca_df: PCA data DataFrame.
+    :param friendswood_df: Friendswood data DataFrame.
+    :param wb: The target Workbook where the sheet will be created.
+    :param month: The month for which the data is being created.
+    :param year: The year for which the data is being created.
+    """
+
+    # Retrieve and process data from various sources
+    final_buyboard_df, final_friendswood_df, final_hcde_df, final_misc_df, final_pca_df, final_usps_df = (
+        clean_col_names(buyboard_df, friendswood_df, hcde_df, misc_df, pca_df, usps_df, func=df_creation_func,
+                        name=fs_type, month=month))
+
+    # Create a blank row DataFrame with NaN values
+    blank_row = pd.DataFrame({col: [np.nan] for col in final_usps_df.columns})
+
+    # Merge the multiple dataframes and note where excluded rows are for styling. This includes the 'total' row,
+    # the blank row, and the next header row.
+    df_lists = [final_usps_df, final_misc_df, final_buyboard_df, final_hcde_df, final_pca_df, final_friendswood_df]
+    final_df, style_skipped_rows, total_rows = retrieve_skipped_rows(blank_row, df_lists)
+
+    total_df = final_df.iloc[total_rows]
+
+    # Calculate and add the total amount of money
+    sums = {col: total_df[col].sum() for col in last_row_columns}
+    total_row = {'Type: \nJOC, HB': f'Total {fs_type} {month} {year}', **sums}
+    total_row_df = pd.DataFrame(total_row, index=[0])
+    final_df = pd.concat([final_df, blank_row, total_row_df], ignore_index=True)
+
+    final_df.reset_index(drop=True, inplace=True)
+
+    ws = wb.create_sheet(title=f'FS {fs_type}')
+
+    # Setting a specified height to all the cells
+    ws.sheet_format.defaultRowHeight = con.SHEET_ROW_HEIGHT
+    ws.sheet_format.customHeight = True
+
+    # Centers the header row
+    center_style_the_headers(final_df, ws)
+
+    # Map column names to their indices and apply styles
+    col_names = final_df.columns
+    col_indices = {}
+    for col_name, style in con.STYLE_MAPPINGS.items():
+        if col_name in col_names:
+            col_idx = col_names.get_loc(col_name)
+            col_indices[col_name] = col_idx
+            if col_name == 'Comment':
+                set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx, wrapText=True)
+            else:
+                set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx)
+
+    # Apply accounting style to the total sum rows
+    for col in last_row_columns:
+        col_idx = final_df.columns.get_loc(col)
+        for row in style_skipped_rows[:-2]:
+            value = final_df.iloc[row, col_idx]
+            cell = ws.cell(row=row + 2, column=col_idx + 1, value=value)
+            cell.style = con.ACCOUNTING_STYLE_NO_BORDER
+        value = final_df.iloc[-1][col]
+        cell = ws.cell(row=len(final_df) + 1, column=col_idx + 1, value=value)
+        cell.style = con.ACCOUNTING_STYLE_NO_BORDER
+
+    # Apply center alignment style to specific columns
+    center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
+    style_center_cols(center_algined_cols, final_df, ws)
+
+    # Need to shift the rows down 2 due to the way the Excel sheet locates them.
+    shifted_style_skipped_rows = [x + 2 for x in style_skipped_rows]
+
+    # Apply general styling to the cells in the sheet
+    for row, row_data in enumerate(final_df.itertuples(index=False), start=2):
+        if row not in shifted_style_skipped_rows:
+            for col, value in enumerate(row_data, start=1):
+                if col not in [col_indices[col_name] + 1 for col_name in columns_to_exclude_from_generic_styles]:
+                    cell = ws.cell(row=row, column=col, value=value)
+                    cell.border = Border(left=Side(border_style='thin'),
+                                         right=Side(border_style='thin'),
+                                         top=Side(border_style='thin'),
+                                         bottom=Side(border_style='thin'))
+        else:
+            for col, value in enumerate(row_data, start=1):
+                cell = ws.cell(row=row, column=col, value=value)
+
+    # Apply column widths, header settings, and alternate row color fill
+    apply_column_widths(final_df, ws)
+    header_settings(final_df, ws, shifted_style_skipped_rows)
+    alternate_color_fill(final_df, ws, shifted_style_skipped_rows)
