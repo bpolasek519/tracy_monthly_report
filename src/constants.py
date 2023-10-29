@@ -132,3 +132,15 @@ FS_OUTSTANDING_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 
 FS_WIP_LAST_ROW_COLS = ['Balance WIP', 'Awd $', 'Bill $', '$ Previously Paid', '$ Outstanding']
 FS_WIP_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', '$ Previously Paid',
                           'Balance WIP', '%', '$ Outstanding']
+
+LLC_WIP_LAST_ROW_COLS = ['Balance WIP', 'Awd $', 'Bill $', '$ Previously Paid', '$ Outstanding']
+LLC_WIP_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', 'Contract Comp. Date',
+                           '$ Previously Paid', '%', '$ Outstanding', 'Balance WIP']
+
+LLC_OUTSTANDING_LAST_ROW_COLS = ['Balance Due', 'Awd $', 'Bill $', '$ Paid']
+LLC_OUTSTANDING_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', '$ Paid',
+                                   'Balance Due', '%', 'Comment']
+
+LLC_PAID_LAST_ROW_COLS = ['Balance Due', 'Awd $', 'Bill $', '$ Previously Paid', '$ Paid']
+LLC_PAID_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Paid/Closed', 'Awd $', 'Bill $', '$ Paid',
+                            'Balance Due', '%', 'Comment', '$ Previously Paid']

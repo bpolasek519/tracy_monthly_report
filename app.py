@@ -10,9 +10,6 @@ import src.dataframe_helper as dh
 app = Flask(__name__)
 
 
-['Awd $', 'Bill $', '$ Previously Paid', '$ Paid', 'Balance Due']
-
-
 def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, friendswood_file, month, year):
     usps_fmd_df = pd.read_excel(f'{usps_file}', sheet_name=f'{year} LTD (FMD)')
     hdce_df = pd.read_excel(f'{hcde_file}', sheet_name=f'{year}')
@@ -24,10 +21,6 @@ def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, f
 
     wb = Workbook()
 
-    wr.create_llc_paid_sheet(llc_df, wb, month=month)
-    wr.create_llc_outstanding_sheet(llc_df, wb)
-    wr.create_llc_wip_sheet(llc_df, wb)
-
     # Create FS Paid
     wr.create_fs_sheet(usps_df=usps_fmd_df, hcde_df=hdce_df, misc_df=misc_df, buyboard_df=buyboard_df,
                        pca_df=pca_df, friendswood_df=friendswood_df, wb=wb, month=month, year=year, fs_type='Paid',
@@ -36,8 +29,9 @@ def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, f
 
     # Create FS Outstanding
     wr.create_fs_sheet(usps_df=usps_fmd_df, hcde_df=hdce_df, misc_df=misc_df, buyboard_df=buyboard_df,
-                       pca_df=pca_df, friendswood_df=friendswood_df, wb=wb, month=month, year=year, fs_type='Outstanding',
-                       df_creation_func=dh.create_outstanding_df, last_row_columns=con.FS_OUTSTANDING_LAST_ROW_COLS,
+                       pca_df=pca_df, friendswood_df=friendswood_df, wb=wb, month=month, year=year,
+                       fs_type='Outstanding', df_creation_func=dh.create_outstanding_df,
+                       last_row_columns=con.FS_OUTSTANDING_LAST_ROW_COLS,
                        columns_to_exclude_from_generic_styles=con.FS_OUTSTANDING_COLS_TO_EXCLUDE)
 
     # Create FS WIP
@@ -45,6 +39,18 @@ def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, f
                        pca_df=pca_df, friendswood_df=friendswood_df, wb=wb, month=month, year=year, fs_type='WIP',
                        df_creation_func=dh.create_wip_df, last_row_columns=con.FS_WIP_LAST_ROW_COLS,
                        columns_to_exclude_from_generic_styles=con.FS_WIP_COLS_TO_EXCLUDE)
+
+    # Create LLC Paid
+    wr.create_llc_sheet(llc_df, wb, llc_type='Paid', last_row_cols=con.LLC_PAID_LAST_ROW_COLS,
+                        cols_to_exclude=con.LLC_PAID_COLS_TO_EXCLUDE, month=month, year=year)
+
+    # Create LLC Outstanding
+    wr.create_llc_sheet(llc_df, wb, llc_type='Outstanding', last_row_cols=con.LLC_OUTSTANDING_LAST_ROW_COLS,
+                        cols_to_exclude=con.LLC_OUTSTANDING_COLS_TO_EXCLUDE, month=month, year=year)
+
+    # Create LLC WIP
+    wr.create_llc_sheet(llc_df, wb, llc_type='WIP', last_row_cols=con.LLC_WIP_LAST_ROW_COLS,
+                        cols_to_exclude=con.LLC_WIP_COLS_TO_EXCLUDE, month=month, year=year)
 
     wb.remove_sheet(wb.get_sheet_by_name('Sheet'))
 
@@ -112,7 +118,6 @@ def process_spreadsheets():
                 uploaded_file.save(file_path)
                 friendswood_file = file_path
             else:
-                # raise Exception(f'Unknown file uploaded: {uploaded_file.filename}')
                 alert_message = f'Unknown file uploaded: {uploaded_file.filename}'
                 return f"<script>alert('{alert_message}'); window.history.back();</script>"
 

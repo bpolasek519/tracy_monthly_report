@@ -8,9 +8,14 @@ def create_wip_df(df: pd.DataFrame, title: str, month: str = '', for_fs: bool = 
     df_filtered_for_job_type = df[mask_job_type].copy()
     df_filtered_for_job_type.reset_index(drop=True, inplace=True)
 
+    # Filter for Paid/Closed that is blank
+    mask_paid_closed_blank = df_filtered_for_job_type['Paid/   Closed'].isna()
+    df_filtered_paid_closed = df_filtered_for_job_type[mask_paid_closed_blank].copy()
+    df_filtered_paid_closed.reset_index(drop=True, inplace=True)
+
     # Filter so Awd col has no blanks
-    mask_awd = df_filtered_for_job_type['Awd'].isna()
-    df_awd_filter = df_filtered_for_job_type[~mask_awd].copy()
+    mask_awd = df_filtered_paid_closed['Awd'].isna()
+    df_awd_filter = df_filtered_paid_closed[~mask_awd].copy()
     df_awd_filter.reset_index(drop=True, inplace=True)
 
     # Filter out where Balance Due is not zero
@@ -19,6 +24,8 @@ def create_wip_df(df: pd.DataFrame, title: str, month: str = '', for_fs: bool = 
     df_balance_due_filter.reset_index(drop=True, inplace=True)
 
     # Filter out where Percent is not 100%
+    df_balance_due_filter['Billed %'] = df_balance_due_filter['Billed %'].astype(float)
+    df_balance_due_filter['Billed %'] = round(df_balance_due_filter['Billed %'], 2)
     mask_percent = df_balance_due_filter['Billed %'] == 1
     df_percent_filter = df_balance_due_filter[~mask_percent].copy()
     df_percent_filter.reset_index(drop=True, inplace=True)
