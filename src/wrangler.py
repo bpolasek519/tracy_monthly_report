@@ -216,6 +216,8 @@ def generate_worksheet_print_settings(sheet_type, month, ws, year, is_fs):
     )
     ws.print_title_rows = '1:1'
 
+    ws.freeze_panes = 'H1'
+
     # Setting a specified height to all the cells
     ws.sheet_format.defaultRowHeight = con.SHEET_ROW_HEIGHT
     ws.sheet_format.customHeight = True
