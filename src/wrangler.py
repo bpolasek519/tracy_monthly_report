@@ -14,11 +14,11 @@ def create_llc_sheet(df: pd.DataFrame, wb: Workbook, llc_type: str, last_row_col
                      cols_to_exclude: List[str], month: str, year: str) -> None:
     # Create a DataFrame
     if llc_type == 'WIP':
-        final_df = dh.create_wip_df(df=df, title='LLC USPS WIP', for_fs=False)
+        final_df = dh.create_wip_df(df=df, title='LLC USPS WIP', for_fs=False, filename='USPS')
     elif llc_type == 'Outstanding':
-        final_df = dh.create_outstanding_df(df, title='LLC USPS Outstanding')
+        final_df = dh.create_outstanding_df(df, title='LLC USPS Outstanding', filename='USPS')
     else:
-        final_df = dh.create_paid_df(df, 'LLC USPS Paid', month=month)
+        final_df = dh.create_paid_df(df, 'LLC USPS Paid', month=month, filename='USPS')
 
     # Create a new sheet within the Workbook
     ws = wb.create_sheet(title=f'LLC {llc_type}')
@@ -236,23 +236,23 @@ def generate_worksheet_print_settings(sheet_type, month, ws, year, is_fs):
 
 def clean_col_names(buyboard_df, friendswood_df, hcde_df, misc_df, pca_df, usps_df, func, name, month):
     usps_df.rename(columns={'Facility Name': 'Client', 'Address': 'Location', '%': 'Billed %'}, inplace=True)
-    final_usps_df = func(usps_df, title=f'USPS {name}', month=month)
+    final_usps_df = func(usps_df, title=f'USPS {name}', month=month, filename='USPS')
     hcde_df.rename(columns={'Type: JOC/HB': 'Type:  JOC, CC, HB', 'Contract ': 'Contract', 'Billed $': 'Bill $'},
                    inplace=True)
-    final_hcde_df = func(hcde_df, title=f'HCDE {name}', month=month)
+    final_hcde_df = func(hcde_df, title=f'HCDE {name}', month=month, filename='HCDE')
     misc_col_names = misc_df.columns
     misc_df.rename(columns={'Type:  JOC, HB': 'Type:  JOC, CC, HB', misc_col_names[1]: 'Contract', 'Client ': 'Client',
                             'Billed $': 'Bill $', 'Comments': 'Comment'}, inplace=True)
-    final_misc_df = func(misc_df, title=f'Misc. {name}', month=month)
+    final_misc_df = func(misc_df, title=f'Misc. {name}', month=month, filename='Misc.')
     buyboard_df.rename(columns={'JOC/HB': 'Type:  JOC, CC, HB', 'Billed $': 'Bill $', 'Comments': 'Comment'},
                        inplace=True)
-    final_buyboard_df = func(buyboard_df, title=f'Buyboard {name}', month=month)
+    final_buyboard_df = func(buyboard_df, title=f'Buyboard {name}', month=month, filename='Buyboard')
     pca_df.rename(columns={'JOC/HB': 'Type:  JOC, CC, HB', 'Contract #': 'Contract', 'Billed $': 'Bill $'},
                   inplace=True)
-    final_pca_df = func(pca_df, title=f'PCA {name}', month=month)
+    final_pca_df = func(pca_df, title=f'PCA {name}', month=month, filename='PCA')
     friendswood_df.rename(columns={'JOC/HB': 'Type:  JOC, CC, HB', 'Contract #': 'Contract', 'Billed $': 'Bill $',
                                    'Billed       %': 'Billed %'}, inplace=True)
-    final_friendswood_df = func(friendswood_df, title=f'Friendswood {name}', month=month)
+    final_friendswood_df = func(friendswood_df, title=f'Friendswood {name}', month=month, filename='Friendswood')
     return final_buyboard_df, final_friendswood_df, final_hcde_df, final_misc_df, final_pca_df, final_usps_df
 
 

@@ -2,7 +2,7 @@ from src.constants import MONTH_TO_NUMBER
 import pandas as pd
 
 
-def create_wip_df(df: pd.DataFrame, title: str, month: str = '', for_fs: bool = True) -> pd.DataFrame:
+def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', for_fs: bool = True) -> pd.DataFrame:
     # Filter so job type is only JOC or HB
     mask_job_type = df['Type:  JOC, CC, HB'].str.contains('JOC|HB', case=False, na=False)
     df_filtered_for_job_type = df[mask_job_type].copy()
@@ -40,7 +40,14 @@ def create_wip_df(df: pd.DataFrame, title: str, month: str = '', for_fs: bool = 
                         'Awd', 'WO#', 'Awd $', 'Contract Comp. Date', 'Substantial Complete', 'Billed Date', 'Bill $',
                         'Billed %', 'Comment', '$ Previously Paid']
 
-    final_df = df_percent_filter[cols_to_keep].copy()
+    missing_columns = [col for col in cols_to_keep if col not in df_percent_filter.columns]
+
+    if len(missing_columns) > 0:
+        raise Exception(f'Cannot find column(s): {", ".join(missing_columns)} in {filename} sheet to create {title}. '
+                        f'Check to see if the column was renamed to something else or removed.')
+    else:
+        final_df = df_percent_filter[cols_to_keep].copy()
+
     final_df.reset_index(drop=True, inplace=True)
 
     # Rename the columns to match what is final
@@ -73,7 +80,7 @@ def create_wip_df(df: pd.DataFrame, title: str, month: str = '', for_fs: bool = 
     return final_df
 
 
-def create_outstanding_df(df: pd.DataFrame, title: str, month: str = '') -> pd.DataFrame:
+def create_outstanding_df(df: pd.DataFrame, title: str, filename: str, month: str = '') -> pd.DataFrame:
     # Filter so job type is only JOC or HB
     mask_job_type = df['Type:  JOC, CC, HB'].str.contains('JOC|HB', case=False, na=False)
     df_filtered_for_job_type = df[mask_job_type].copy()
@@ -102,7 +109,14 @@ def create_outstanding_df(df: pd.DataFrame, title: str, month: str = '') -> pd.D
     cols_to_keep = ['Type:  JOC, CC, HB', 'Contract', 'Proj. #', 'Prob. C/O #', 'Client', 'Location', 'Description',
                     'Awd', 'Awd $', 'Substantial Complete', 'Billed Date', 'Bill $', 'Billed %', 'Comment',
                     '$ Paid', 'Billed-Paid']
-    final_df = final_df[cols_to_keep].copy()
+
+    missing_columns = [col for col in cols_to_keep if col not in final_df.columns]
+
+    if len(missing_columns) > 0:
+        raise Exception(f'Cannot find column(s): {", ".join(missing_columns)} in {filename} sheet to create {title}. '
+                        f'Check to see if the column was renamed to something else or removed.')
+    else:
+        final_df = final_df[cols_to_keep].copy()
 
     # Rename the columns to match what is final
     final_df.rename(columns={'Type:  JOC, CC, HB': 'Type: \nJOC, HB', 'Client': 'Facility Name', 'Location': 'Address',
@@ -130,7 +144,7 @@ def create_outstanding_df(df: pd.DataFrame, title: str, month: str = '') -> pd.D
     return final_df
 
 
-def create_paid_df(df: pd.DataFrame, title: str, month: str) -> pd.DataFrame:
+def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> pd.DataFrame:
     # Filter so job type is only JOC or HB
     mask_job_type = df['Type:  JOC, CC, HB'].str.contains('JOC|HB', case=False, na=False)
     df_filtered_for_job_type = df[mask_job_type].copy()
@@ -149,7 +163,14 @@ def create_paid_df(df: pd.DataFrame, title: str, month: str) -> pd.DataFrame:
     # Remove any that haven't been awarded yet
     mask_awd_not_empty = pd.isna(df_filtered_for_paid_current_month['Awd'])
     final_df = df_filtered_for_paid_current_month[~mask_awd_not_empty].reset_index(drop=True)
-    final_df = final_df[cols_to_keep].copy()
+
+    missing_columns = [col for col in cols_to_keep if col not in final_df.columns]
+
+    if len(missing_columns) > 0:
+        raise Exception(f'Cannot find column(s): {", ".join(missing_columns)} in {filename} sheet to create {title}. '
+                        f'Check to see if the column was renamed to something else or removed.')
+    else:
+        final_df = final_df[cols_to_keep].copy()
 
     if final_df.empty:
         return final_df

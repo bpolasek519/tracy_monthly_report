@@ -6,18 +6,19 @@ import os
 import src.constants as con
 import shutil
 import src.dataframe_helper as dh
+import src.exceptions as e
 
 app = Flask(__name__)
 
 
 def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, friendswood_file, month, year):
-    usps_fmd_df = pd.read_excel(f'{usps_file}', sheet_name=f'{year} LTD (FMD)')
-    hdce_df = pd.read_excel(f'{hcde_file}', sheet_name=f'{year}')
-    llc_df = pd.read_excel(f'{usps_file}', sheet_name=f'{year} FMD - DPFS LLC')
-    misc_df = pd.read_excel(f'{misc_file}', sheet_name=f'{year}')
-    buyboard_df = pd.read_excel(f'{buyboard_file}', sheet_name=f'{year}')
-    pca_df = pd.read_excel(f'{pca_file}', sheet_name=f'{year}')
-    friendswood_df = pd.read_excel(f'{friendswood_file}', sheet_name=f'{year}')
+    usps_fmd_df = e.read_excel_with_exception(f'{usps_file}', sheet_name=f'{year} LTD (FMD)')
+    hdce_df = e.read_excel_with_exception(f'{hcde_file}', sheet_name=f'{year}')
+    llc_df = e.read_excel_with_exception(f'{usps_file}', sheet_name=f'{year} FMD - DPFS LLC')
+    misc_df = e.read_excel_with_exception(f'{misc_file}', sheet_name=f'{year}')
+    buyboard_df = e.read_excel_with_exception(f'{buyboard_file}', sheet_name=f'{year}')
+    pca_df = e.read_excel_with_exception(f'{pca_file}', sheet_name=f'{year}')
+    friendswood_df = e.read_excel_with_exception(f'{friendswood_file}', sheet_name=f'{year}')
 
     wb = Workbook()
 
@@ -126,8 +127,11 @@ def process_spreadsheets():
         alert_message = f'Missing one or more files to create the WIP file'
         return f"<script>alert('{alert_message}'); window.history.back();</script>"
 
-    wb = read_usps_report(usps_file=usps_file, hcde_file=hcde_file, friendswood_file=friendswood_file,
-                          misc_file=misc_file, pca_file=pca_file, buyboard_file=buyboard_file, month=month, year=year)
+    try:
+        wb = read_usps_report(usps_file=usps_file, hcde_file=hcde_file, friendswood_file=friendswood_file, year=year,
+                              misc_file=misc_file, pca_file=pca_file, buyboard_file=buyboard_file, month=month)
+    except Exception as ex:
+        return f"<script>alert('{ex}'); window.history.back();</script>"
 
     results_file = f'uploads/{con.MONTH_TO_ZERO_PADDED_NUMBER[month]}-{year} WIP.xlsx'
     wb.save(results_file)
@@ -136,4 +140,4 @@ def process_spreadsheets():
 
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
