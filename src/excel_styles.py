@@ -19,6 +19,7 @@ def set_style(df, ws, col_name, style, idx, wrapText: bool = False):
     for row, value in enumerate(df[col_name][:-1], start=2):
         cell = ws.cell(row=row, column=idx + 1, value=value)
         cell.style = style
+        cell.font = Font(bold=True)
         if wrapText:
             cell.alignment = cell.alignment.copy(wrapText=True)
 
@@ -67,16 +68,19 @@ def alternate_color_fill(df, ws, shifted_style_skipped_rows=None):
                 cell = ws.cell(row=row_index + 2, column=col_index + 1)  # +2 to account for 0-based index and header
                 cell.value = value
                 cell.fill = fill_color
+                cell.font = Font(bold=True)
         else:
             if row_index + 2 in shifted_style_skipped_rows:
                 for col_index, value in enumerate(row):
                     cell = ws.cell(row=row_index + 2, column=col_index + 1)
                     cell.value = value
+                    cell.font = Font(bold=True)
             else:
                 for col_index, value in enumerate(row):
                     cell = ws.cell(row=row_index + 2, column=col_index + 1)
                     cell.value = value
                     cell.fill = fill_color
+                    cell.font = Font(bold=True)
 
 
 def center_style_the_headers(final_df, ws):

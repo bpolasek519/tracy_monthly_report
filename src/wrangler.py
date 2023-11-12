@@ -2,7 +2,7 @@ from typing import Callable, List
 import numpy as np
 import pandas as pd
 from openpyxl import Workbook
-from openpyxl.styles import Border, Side
+from openpyxl.styles import Border, Side, Font
 from openpyxl.worksheet.page import PageMargins
 import src.constants as con
 import src.dataframe_helper as dh
@@ -60,6 +60,7 @@ def create_llc_sheet(df: pd.DataFrame, wb: Workbook, llc_type: str, last_row_col
                                          right=Side(border_style='thin'),
                                          top=Side(border_style='thin'),
                                          bottom=Side(border_style='thin'))
+                    cell.font = Font(bold=True)
         elif row == len(final_df) + 1:
             for col, value in enumerate(row_data, start=1):
                 cell = ws.cell(row=row, column=col, value=value)
@@ -190,6 +191,7 @@ def create_fs_sheet(usps_df: pd.DataFrame, hcde_df: pd.DataFrame, misc_df: pd.Da
                                          right=Side(border_style='thin'),
                                          top=Side(border_style='thin'),
                                          bottom=Side(border_style='thin'))
+                    cell.font = Font(bold=True)
         else:
             for col, value in enumerate(row_data, start=1):
                 cell = ws.cell(row=row, column=col, value=value)
@@ -206,14 +208,15 @@ def generate_worksheet_print_settings(sheet_type, month, ws, year, is_fs):
     ws.sheet_properties.pageSetUpPr.fitToPage = True
     ws.page_setup.fitToHeight = False
 
-    ws.page_setup.margins = PageMargins(
+    ws.page_margins = PageMargins(
         left=0.2,  # Left margin
         right=0.2,  # Right margin
-        top=1,  # Top margin
-        bottom=0.25,  # Bottom margin
-        header=0.3,  # Header margin
+        top=1.25,  # Top margin
+        bottom=0.2,  # Bottom margin
+        header=0.1,  # Header margin
         footer=0.3
     )
+
     ws.print_title_rows = '1:1'
 
     ws.freeze_panes = 'H1'
@@ -232,8 +235,14 @@ def generate_worksheet_print_settings(sheet_type, month, ws, year, is_fs):
             print_header_text = f'Dura Pier Facility Service, LLC\nWIP Report\n{month} {year}'
         else:
             print_header_text = f'Dura Pier Facility Service, LLC\n{sheet_type.capitalize()} Report\n{month} {year}'
-    ws.oddHeader.center.text = print_header_text
-    ws.evenHeader.center.text = print_header_text
+
+    # Apply the header text and font properties to the oddHeader and evenHeader
+    ws.oddHeader.center.text = f'{print_header_text}'
+    ws.evenHeader.center.text = f'{print_header_text}'
+    ws.oddHeader.center.size = 14
+    ws.evenHeader.center.size = 14
+    ws.oddHeader.center.font = 'Arial,Bold'
+    ws.evenHeader.center.font = 'Arial,Bold'
 
 
 def clean_col_names(buyboard_df, friendswood_df, hcde_df, misc_df, pca_df, usps_df, func, name, month):
