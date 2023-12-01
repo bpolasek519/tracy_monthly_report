@@ -8,28 +8,36 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
     df_filtered_for_job_type = df[mask_job_type].copy()
     df_filtered_for_job_type.reset_index(drop=True, inplace=True)
 
+    mask_awd_amt_not_zero = df_filtered_for_job_type['Awd $'] != 0
+    mask_awd_not_nan = ~df_filtered_for_job_type['Awd $'].isna()
+    df_filtered_for_job_type['Billed %'] = round(df_filtered_for_job_type['Billed %'], 2)
+    mask_billed_percent_not_100 = df_filtered_for_job_type['Billed %'] != 1
+
+    df_percent_filter = df_filtered_for_job_type[mask_awd_amt_not_zero & mask_awd_not_nan &
+                                                 mask_billed_percent_not_100].copy()
+
     # Filter for Paid/Closed that is blank AND Prev Paid is blank
-    mask_paid_closed_blank = df_filtered_for_job_type['Paid/   Closed'].isna()
-    mask_prev_paid_blank = df_filtered_for_job_type['$ Previously Paid'] == 0
-    df_filtered_paid_closed = df_filtered_for_job_type[mask_paid_closed_blank & mask_prev_paid_blank].copy()
-    df_filtered_paid_closed.reset_index(drop=True, inplace=True)
-
-    # Filter so Awd col has no blanks
-    mask_awd = df_filtered_paid_closed['Awd'].isna()
-    df_awd_filter = df_filtered_paid_closed[~mask_awd].copy()
-    df_awd_filter.reset_index(drop=True, inplace=True)
-
-    # Filter out where Balance Due is not zero
-    mask_balance_due = df_awd_filter['Balance Due'] == 0
-    df_balance_due_filter = df_awd_filter[~mask_balance_due].copy()
-    df_balance_due_filter.reset_index(drop=True, inplace=True)
-
-    # Filter out where Percent is not 100%
-    df_balance_due_filter['Billed %'] = df_balance_due_filter['Billed %'].astype(float)
-    df_balance_due_filter['Billed %'] = round(df_balance_due_filter['Billed %'], 2)
-    mask_percent = df_balance_due_filter['Billed %'] == 1
-    df_percent_filter = df_balance_due_filter[~mask_percent].copy()
-    df_percent_filter.reset_index(drop=True, inplace=True)
+    # mask_paid_closed_blank = df_filtered_for_job_type['Paid/   Closed'].isna()
+    # mask_prev_paid_blank = df_filtered_for_job_type['$ Previously Paid'] == 0
+    # df_filtered_paid_closed = df_filtered_for_job_type[mask_paid_closed_blank & mask_prev_paid_blank].copy()
+    # df_filtered_paid_closed.reset_index(drop=True, inplace=True)
+    #
+    # # Filter so Awd col has no blanks
+    # mask_awd = df_filtered_paid_closed['Awd'].isna()
+    # df_awd_filter = df_filtered_paid_closed[~mask_awd].copy()
+    # df_awd_filter.reset_index(drop=True, inplace=True)
+    #
+    # # Filter out where Balance Due is not zero
+    # mask_balance_due = df_awd_filter['Balance Due'] == 0
+    # df_balance_due_filter = df_awd_filter[~mask_balance_due].copy()
+    # df_balance_due_filter.reset_index(drop=True, inplace=True)
+    #
+    # # Filter out where Percent is not 100%
+    # df_balance_due_filter['Billed %'] = df_balance_due_filter['Billed %'].astype(float)
+    # df_balance_due_filter['Billed %'] = round(df_balance_due_filter['Billed %'], 2)
+    # mask_percent = df_balance_due_filter['Billed %'] == 1
+    # df_percent_filter = df_balance_due_filter[~mask_percent].copy()
+    # df_percent_filter.reset_index(drop=True, inplace=True)
 
     # Certain cols to keep for final
     if for_fs:
@@ -97,6 +105,10 @@ def create_outstanding_df(df: pd.DataFrame, title: str, filename: str, month: st
     df_filtered_billed_date = df_filtered_paid_closed[~mask_billed_date_blank].copy()
     df_filtered_billed_date.reset_index(drop=True, inplace=True)
 
+    df_filtered_billed_date['Bill $'] = round(df_filtered_billed_date['Bill $'], 2)
+    df_filtered_billed_date['$ Previously Paid'] = round(df_filtered_billed_date['$ Previously Paid'], 2)
+    df_filtered_billed_date['$ Paid Current Month'] = round(df_filtered_billed_date['$ Paid Current Month'], 2)
+
     # Filter for Billed - Paid > 0:
     df_filtered_billed_date['Billed-Paid'] = (df_filtered_billed_date['Bill $'] -
                                               (df_filtered_billed_date['$ Previously Paid'] +
@@ -151,15 +163,32 @@ def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> p
     df_filtered_for_job_type = df[mask_job_type].copy()
     df_filtered_for_job_type.reset_index(drop=True, inplace=True)
 
-    # Filter for paid in the current month OR prev paid is not empty if paid/closed is blank
     df_filtered_for_job_type['Paid/   Closed'] = pd.to_datetime(df_filtered_for_job_type['Paid/   Closed'])
-    mask_paid_current_month = df_filtered_for_job_type['Paid/   Closed'].dt.month == MONTH_TO_NUMBER[month]
-    mask_prev_paid_not_empty = df_filtered_for_job_type['$ Previously Paid'] != 0
-    mask_paid_closed_blank = df_filtered_for_job_type['Paid/   Closed'].isna()
-    mask_prev_paid_not_empty_and_paid_closed_blank = mask_prev_paid_not_empty & mask_paid_closed_blank
-    df_filtered_for_paid_current_month = df_filtered_for_job_type[
-        mask_paid_current_month | mask_prev_paid_not_empty_and_paid_closed_blank
-        ].copy()
+    mask_current_month_date = df_filtered_for_job_type['Paid/   Closed'].dt.month == MONTH_TO_NUMBER[month]
+    df_filtered_for_job_type['Billed %'] = round(df_filtered_for_job_type['Billed %'], 2)
+    mask_billed_percent = df_filtered_for_job_type['Billed %'] == 1
+    mask_paid_current_month_has_value = ((df_filtered_for_job_type['$ Paid Current Month'] != 0) &
+                                         (~df_filtered_for_job_type['$ Paid Current Month'].isna()))
+    mask_date_empty = df_filtered_for_job_type['Paid/   Closed'].isna()
+
+    mask_current_month_and_billed_100_percent = mask_current_month_date & mask_billed_percent
+    mask_paid_current_month_and_no_date = mask_paid_current_month_has_value & mask_date_empty
+
+    df_filtered_for_paid_current_month = df_filtered_for_job_type[mask_current_month_and_billed_100_percent
+                                                                  | mask_paid_current_month_and_no_date].copy()
+
+    # Filter for paid in the current month OR prev paid is not empty if paid/closed is blank
+    # df_filtered_for_job_type['Paid/   Closed'] = pd.to_datetime(df_filtered_for_job_type['Paid/   Closed'])
+    # mask_paid_current_month = df_filtered_for_job_type['Paid/   Closed'].dt.month == MONTH_TO_NUMBER[month]
+    # mask_prev_paid_not_empty = df_filtered_for_job_type['$ Previously Paid'] != 0
+    # mask_paid_closed_blank = df_filtered_for_job_type['Paid/   Closed'].isna()
+    # mask_prev_paid_not_empty_and_paid_closed_blank = mask_prev_paid_not_empty & mask_paid_closed_blank
+    # df_filtered_for_paid_current_month = df_filtered_for_job_type[
+    #     mask_paid_current_month | mask_prev_paid_not_empty_and_paid_closed_blank
+    #     ].copy()
+    #
+    # mask_paid_not_empty = df_filtered_for_paid_current_month['$ Paid Current Month'] != 0
+    # df_filtered_for_paid_current_month = df_filtered_for_paid_current_month[mask_paid_not_empty]
 
     # Certain cols to keep for final
     cols_to_keep = ['Type:  JOC, CC, HB', 'Contract', 'Proj. #', 'Prob. C/O #', 'Client', 'Location', 'Description',
