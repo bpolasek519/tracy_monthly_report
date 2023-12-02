@@ -16,6 +16,8 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
     df_percent_filter = df_filtered_for_job_type[mask_awd_amt_not_zero & mask_awd_not_nan &
                                                  mask_billed_percent_not_100].copy()
 
+    df_percent_filter.rename(columns={'$ Previously Paid': 'Old Previous Paid'}, inplace=True)
+
     # Filter for Paid/Closed that is blank AND Prev Paid is blank
     # mask_paid_closed_blank = df_filtered_for_job_type['Paid/   Closed'].isna()
     # mask_prev_paid_blank = df_filtered_for_job_type['$ Previously Paid'] == 0
@@ -39,15 +41,20 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
     # df_percent_filter = df_balance_due_filter[~mask_percent].copy()
     # df_percent_filter.reset_index(drop=True, inplace=True)
 
+    df_percent_filter['Total Paid'] = df_percent_filter['Old Previous Paid'] + df_percent_filter['$ Paid Current Month']
+    df_percent_filter['$ Outstanding'] = df_percent_filter['Bill $'] - df_percent_filter['Total Paid']
+    df_percent_filter['Balance WIP'] = (df_percent_filter['Awd $'] - df_percent_filter['Total Paid'] -
+                                        df_percent_filter['$ Outstanding'])
+
     # Certain cols to keep for final
     if for_fs:
         cols_to_keep = ['Type:  JOC, CC, HB', 'Contract', 'Proj. #', 'Prob. C/O #', 'Client', 'Location', 'Description',
                         'Awd', 'Awd $', 'Substantial Complete', 'Billed Date', 'Bill $', 'Billed %', 'Comment',
-                        '$ Previously Paid']
+                        'Total Paid', '$ Outstanding', 'Balance WIP']
     else:
         cols_to_keep = ['Type:  JOC, CC, HB', 'Contract', 'Proj. #', 'Prob. C/O #', 'Client', 'Location', 'Description',
                         'Awd', 'WO#', 'Awd $', 'Contract Comp. Date', 'Substantial Complete', 'Billed Date', 'Bill $',
-                        'Billed %', 'Comment', '$ Previously Paid']
+                        'Billed %', 'Comment', 'Total Paid', '$ Outstanding', 'Balance WIP']
 
     missing_columns = [col for col in cols_to_keep if col not in df_percent_filter.columns]
 
@@ -64,8 +71,9 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
                              'Billed %': '%', 'Prob. C/O #': 'Prob. \n C/O #'},
                     inplace=True)
 
-    final_df['$ Outstanding'] = final_df['Bill $'] - final_df['$ Previously Paid']
-    final_df['Balance WIP'] = final_df['Awd $'] - final_df['$ Previously Paid'] - final_df['$ Outstanding']
+    # final_df['Total Paid'] = final_df['Old Previous Paid'] + 2
+    # final_df['$ Outstanding'] = final_df['Bill $'] - final_df['$ Previously Paid']
+    # final_df['Balance WIP'] = final_df['Awd $'] - final_df['$ Previously Paid'] - final_df['$ Outstanding']
 
     if final_df.empty:
         return final_df
