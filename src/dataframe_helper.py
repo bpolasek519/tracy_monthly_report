@@ -86,11 +86,11 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
     # Adds the total amount of money
     awd_sum = final_df['Awd $'].sum()
     bill_sum = final_df['Bill $'].sum()
-    paid_sum = final_df['$ Previously Paid'].sum()
+    paid_sum = final_df['Total Paid'].sum()
     outstanding_sum = final_df['$ Outstanding'].sum()
     balance_due_sum = final_df['Balance WIP'].sum()
     total_row = {'Type: \nJOC, HB': f'Total {title}', 'Awd $': awd_sum, 'Bill $': bill_sum,
-                 '$ Previously Paid': paid_sum, '$ Outstanding': outstanding_sum, 'Balance WIP': balance_due_sum}
+                 'Total Paid': paid_sum, '$ Outstanding': outstanding_sum, 'Balance WIP': balance_due_sum}
     total_row_df = pd.DataFrame(total_row, index=[0])
     final_df = pd.concat([final_df, total_row_df], ignore_index=True)
 

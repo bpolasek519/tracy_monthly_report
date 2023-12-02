@@ -129,13 +129,13 @@ FS_OUTSTANDING_LAST_ROW_COLS = ['Awd $', 'Bill $', '$ Paid', 'Balance Due']
 FS_OUTSTANDING_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', '$ Paid',
                                   'Balance Due', '%', 'Comment']
 
-FS_WIP_LAST_ROW_COLS = ['Balance WIP', 'Awd $', 'Bill $', '$ Previously Paid', '$ Outstanding']
-FS_WIP_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', '$ Previously Paid',
+FS_WIP_LAST_ROW_COLS = ['Balance WIP', 'Awd $', 'Bill $', 'Total Paid', '$ Outstanding']
+FS_WIP_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', 'Total Paid',
                           'Balance WIP', '%', '$ Outstanding']
 
-LLC_WIP_LAST_ROW_COLS = ['Balance WIP', 'Awd $', 'Bill $', '$ Previously Paid', '$ Outstanding']
+LLC_WIP_LAST_ROW_COLS = ['Balance WIP', 'Awd $', 'Bill $', 'Total Paid', '$ Outstanding']
 LLC_WIP_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', 'Contract Comp. Date',
-                           '$ Previously Paid', '%', '$ Outstanding', 'Balance WIP']
+                           'Total Paid', '%', '$ Outstanding', 'Balance WIP']
 
 LLC_OUTSTANDING_LAST_ROW_COLS = ['Balance Due', 'Awd $', 'Bill $', '$ Paid']
 LLC_OUTSTANDING_COLS_TO_EXCLUDE = ['Awd', 'Substantial Complete', 'Billed Date', 'Awd $', 'Bill $', '$ Paid',
