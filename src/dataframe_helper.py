@@ -16,8 +16,6 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
     df_percent_filter = df_filtered_for_job_type[mask_awd_amt_not_zero & mask_awd_not_nan &
                                                  mask_billed_percent_not_100].copy()
 
-    df_percent_filter.rename(columns={'$ Previously Paid': 'Old Previous Paid'}, inplace=True)
-
     # Filter for Paid/Closed that is blank AND Prev Paid is blank
     # mask_paid_closed_blank = df_filtered_for_job_type['Paid/   Closed'].isna()
     # mask_prev_paid_blank = df_filtered_for_job_type['$ Previously Paid'] == 0
@@ -41,7 +39,7 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
     # df_percent_filter = df_balance_due_filter[~mask_percent].copy()
     # df_percent_filter.reset_index(drop=True, inplace=True)
 
-    df_percent_filter['Total Paid'] = df_percent_filter['Old Previous Paid'] + df_percent_filter['$ Paid Current Month']
+    df_percent_filter['Total Paid'] = df_percent_filter['$ Previously Paid'] + df_percent_filter['$ Paid Current Month']
     df_percent_filter['$ Outstanding'] = df_percent_filter['Bill $'] - df_percent_filter['Total Paid']
     df_percent_filter['Balance WIP'] = (df_percent_filter['Awd $'] - df_percent_filter['Total Paid'] -
                                         df_percent_filter['$ Outstanding'])
