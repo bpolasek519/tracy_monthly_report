@@ -2,7 +2,7 @@ from typing import Callable, List
 import numpy as np
 import pandas as pd
 from openpyxl import Workbook
-from openpyxl.styles import Border, Side, Font
+from openpyxl.styles import Border, Side, Font, Alignment
 from openpyxl.worksheet.page import PageMargins
 import src.constants as con
 import src.dataframe_helper as dh
@@ -288,3 +288,21 @@ def retrieve_skipped_rows(blank_row, df_lists):
         else:
             continue
     return final_df, style_skipped_rows, total_rows
+
+
+def create_cp_header(sheet):
+    start_width_col = 'A'
+    end_width_col = 'J'
+    default_width = 20
+
+    for col in range(ord(start_width_col), ord(end_width_col) + 1):
+        col_letter = chr(col)
+        sheet.column_dimensions[col_letter].width = default_width
+
+    sheet.merge_cells('A1:F1')
+
+    sheet['A1'] = 'Choice Partners Monthly Reporting Form'
+    title_font = Font(size=18, bold=True, name='Calibri')
+    center_alignment = Alignment(horizontal='center', vertical='center')
+    sheet['A1'].font = title_font
+    sheet['A1'].alignment = center_alignment

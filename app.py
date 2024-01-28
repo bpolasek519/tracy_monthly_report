@@ -58,6 +58,15 @@ def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, f
     return wb
 
 
+def create_choice_partners_report(hcde_file=None):
+    wb = Workbook()
+    sheet = wb.active
+
+    wr.create_cp_header(sheet)
+
+    return wb
+
+
 @app.route('/')
 def index():
     return render_template('index.html', month_options=con.MONTH_OPTIONS)

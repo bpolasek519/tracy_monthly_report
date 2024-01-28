@@ -1,4 +1,4 @@
-from app import read_usps_report
+from app import read_usps_report, create_choice_partners_report
 
 
 def test_read_usps_report():
@@ -14,3 +14,9 @@ def test_read_usps_report():
     wb.save(results_file)
 
     assert True
+
+
+def test_cp_file():
+    wb = create_choice_partners_report()
+
+    wb.save('data/cp/test.xlsx')
