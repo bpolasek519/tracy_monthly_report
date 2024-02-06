@@ -8,7 +8,7 @@ def test_read_usps_report():
                      friendswood_file='data/current/21 Friendswood ISD STATUS REPORT-CURRENT.xlsx',
                      buyboard_file='data/current/98 BuyBoard Status Report-New.xlsx',
                      pca_file='data/current/62 PCA STATUS REPORT-CURRENT.xlsx',
-                     misc_file='data/current/76 MISC. JOBS STATUS REPORT-CURRENT.xlsx', year=2023, month='October')
+                     misc_file='data/current/76 MISC. JOBS STATUS REPORT-CURRENT.xlsx', year=2024, month='January')
 
     results_file = f'data/current/test_WIP.xlsx'
     wb.save(results_file)
@@ -17,6 +17,7 @@ def test_read_usps_report():
 
 
 def test_cp_file():
-    wb = create_choice_partners_report()
+    wb = create_choice_partners_report(hcde_file='data/current/87-HCDE Status Report - Current.xlsx', year=2023,
+                                       month='December')
 
     wb.save('data/cp/test.xlsx')

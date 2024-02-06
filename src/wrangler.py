@@ -41,29 +41,30 @@ def create_llc_sheet(df: pd.DataFrame, wb: Workbook, llc_type: str, last_row_col
                 set_style(df=final_df, ws=ws, col_name=col_name, style=style, idx=col_idx)
 
     # Apply accounting style to the total sum row
-    last_row = final_df.iloc[-1]
-    last_row_style_cols = last_row_cols
-    last_row_style(final_df, last_row, last_row_style_cols, ws)
+    if not final_df.empty:
+        last_row = final_df.iloc[-1]
+        last_row_style_cols = last_row_cols
+        last_row_style(final_df, last_row, last_row_style_cols, ws)
 
-    # Apply center alignment style to specific columns
-    center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
-    style_center_cols(center_algined_cols, final_df, ws)
+        # Apply center alignment style to specific columns
+        center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
+        style_center_cols(center_algined_cols, final_df, ws)
 
-    # Apply general styling to the cells in the sheet
-    excluded_columns = cols_to_exclude
-    for row, row_data in enumerate(final_df.itertuples(index=False), start=2):
-        if row <= len(final_df):
-            for col, value in enumerate(row_data[:-1], start=1):
-                if col not in [col_indices[col_name] + 1 for col_name in excluded_columns]:
+        # Apply general styling to the cells in the sheet
+        excluded_columns = cols_to_exclude
+        for row, row_data in enumerate(final_df.itertuples(index=False), start=2):
+            if row <= len(final_df):
+                for col, value in enumerate(row_data[:-1], start=1):
+                    if col not in [col_indices[col_name] + 1 for col_name in excluded_columns]:
+                        cell = ws.cell(row=row, column=col, value=value)
+                        cell.border = Border(left=Side(border_style='thin'),
+                                             right=Side(border_style='thin'),
+                                             top=Side(border_style='thin'),
+                                             bottom=Side(border_style='thin'))
+                        cell.font = Font(bold=True)
+            elif row == len(final_df) + 1:
+                for col, value in enumerate(row_data, start=1):
                     cell = ws.cell(row=row, column=col, value=value)
-                    cell.border = Border(left=Side(border_style='thin'),
-                                         right=Side(border_style='thin'),
-                                         top=Side(border_style='thin'),
-                                         bottom=Side(border_style='thin'))
-                    cell.font = Font(bold=True)
-        elif row == len(final_df) + 1:
-            for col, value in enumerate(row_data, start=1):
-                cell = ws.cell(row=row, column=col, value=value)
 
     # Apply column widths, header settings, and alternate row color fill
     apply_column_widths(final_df, ws)
@@ -291,6 +292,7 @@ def retrieve_skipped_rows(blank_row, df_lists):
 
 
 def create_cp_header(sheet):
+    # Expand the width of the columns
     start_width_col = 'A'
     end_width_col = 'J'
     default_width = 20
@@ -299,10 +301,30 @@ def create_cp_header(sheet):
         col_letter = chr(col)
         sheet.column_dimensions[col_letter].width = default_width
 
+    # Add the first row header
     sheet.merge_cells('A1:F1')
-
     sheet['A1'] = 'Choice Partners Monthly Reporting Form'
     title_font = Font(size=18, bold=True, name='Calibri')
     center_alignment = Alignment(horizontal='center', vertical='center')
     sheet['A1'].font = title_font
     sheet['A1'].alignment = center_alignment
+
+    # Add the second row
+    sheet.merge_cells('A2:F2')
+    sheet['A2'] = 'When complete email to FacilityReporting@ChoicePartners.org'
+    subheader_font = Font(size=11, bold=True, underline=True, name='Calibri')
+    sheet['A2'].font = subheader_font
+    sheet['A2'].alignment = center_alignment
+
+    # Add the third row
+    sheet.merge_cells('A3:F3')
+    sheet['A3'] = 'Name File VendorName ReportMonth#Year#.xlsx (ex. ABC 9 2023.xlsx)'
+    naming_font = Font(size=11, color='red', name='Calibri')
+    sheet['A3'].font = naming_font
+    sheet['A3'].alignment = center_alignment
+
+
+
+
+
+

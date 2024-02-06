@@ -200,3 +200,26 @@ def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> p
     final_df = pd.concat([final_df, total_row_df], ignore_index=True)
 
     return final_df
+
+
+def create_cp_completed(df: pd.DataFrame, month: str):
+    # Confirming that the contract was awarded
+    mask_awarded = df['Awd'].isna()
+    awarded_df = df[~mask_awarded].copy()
+
+    # Confirming that billed is 100%
+    masK_100_per = awarded_df['Billed %'] >= 1
+    billed_100_per = awarded_df[masK_100_per].copy()
+
+    # Paid/Closed is either current month or null
+    mask_paid_null = billed_100_per['Paid/   Closed'].isna()
+    mask_paid_current_month = billed_100_per['Paid/   Closed'].dt.month == MONTH_TO_NUMBER[month]
+    current_df = billed_100_per[mask_paid_current_month | mask_paid_null].copy()
+
+    unique_contracts = current_df['Contract '].unique()
+    if len(unique_contracts) == 1:
+        multiple_contracts = False
+    else:
+        multiple_contracts = True
+
+    return current_df, multiple_contracts

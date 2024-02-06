@@ -58,10 +58,12 @@ def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, f
     return wb
 
 
-def create_choice_partners_report(hcde_file=None):
+def create_choice_partners_report(hcde_file, year, month):
     wb = Workbook()
     sheet = wb.active
 
+    hcde_df = e.read_excel_with_exception(f'{hcde_file}', sheet_name=f'{year}')
+    dh.create_cp_completed(hcde_df, month=month)
     wr.create_cp_header(sheet)
 
     return wb
@@ -139,11 +141,14 @@ def process_spreadsheets():
     try:
         wb = read_usps_report(usps_file=usps_file, hcde_file=hcde_file, friendswood_file=friendswood_file, year=year,
                               misc_file=misc_file, pca_file=pca_file, buyboard_file=buyboard_file, month=month)
+        cp_wb = create_choice_partners_report(hcde_file=hcde_file)
     except Exception as ex:
         return f"<script>alert('{ex}'); window.history.back();</script>"
 
     results_file = f'uploads/{con.MONTH_TO_ZERO_PADDED_NUMBER[month]}-{year} WIP.xlsx'
+    cp_file = f'uploads/Facilities Sources {con.MONTH_TO_ZERO_PADDED_NUMBER[month]} {year}.xlsx'
     wb.save(results_file)
+    cp_wb.save(cp_file)
 
     return send_file(results_file, as_attachment=True)
 
