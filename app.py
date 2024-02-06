@@ -141,16 +141,17 @@ def process_spreadsheets():
     try:
         wb = read_usps_report(usps_file=usps_file, hcde_file=hcde_file, friendswood_file=friendswood_file, year=year,
                               misc_file=misc_file, pca_file=pca_file, buyboard_file=buyboard_file, month=month)
-        cp_wb = create_choice_partners_report(hcde_file=hcde_file)
+        # cp_wb = create_choice_partners_report(hcde_file=hcde_file)
+
+        results_file = f'uploads/{con.MONTH_TO_ZERO_PADDED_NUMBER[month]}-{year} WIP.xlsx'
+        # cp_file = f'uploads/Facilities Sources {con.MONTH_TO_ZERO_PADDED_NUMBER[month]} {year}.xlsx'
+        wb.save(results_file)
+        # cp_wb.save(cp_file)
+
+        return send_file(results_file, as_attachment=True)
+
     except Exception as ex:
         return f"<script>alert('{ex}'); window.history.back();</script>"
-
-    results_file = f'uploads/{con.MONTH_TO_ZERO_PADDED_NUMBER[month]}-{year} WIP.xlsx'
-    cp_file = f'uploads/Facilities Sources {con.MONTH_TO_ZERO_PADDED_NUMBER[month]} {year}.xlsx'
-    wb.save(results_file)
-    cp_wb.save(cp_file)
-
-    return send_file(results_file, as_attachment=True)
 
 
 if __name__ == '__main__':
