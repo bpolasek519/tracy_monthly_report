@@ -3,6 +3,11 @@ import pandas as pd
 
 
 def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', for_fs: bool = True) -> pd.DataFrame:
+    if title == 'LLC USPS WIP':
+        billed_percent = '%'
+    else:
+        billed_percent = 'Billed %'
+
     # Filter so job type is only JOC or HB
     mask_job_type = df['Type:  JOC, CC, HB'].str.contains('JOC|HB', case=False, na=False)
     df_filtered_for_job_type = df[mask_job_type].copy()
@@ -11,8 +16,8 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
     mask_awd_amt_not_zero = df_filtered_for_job_type['Awd $'] != 0
     mask_paid_closed_blank = df_filtered_for_job_type['Paid/   Closed'].isna()
     mask_awd_not_nan = ~df_filtered_for_job_type['Awd $'].isna()
-    df_filtered_for_job_type['Billed %'] = round(df_filtered_for_job_type['Billed %'], 2)
-    mask_billed_percent_not_100 = df_filtered_for_job_type['Billed %'] != 1
+    df_filtered_for_job_type[billed_percent] = round(df_filtered_for_job_type[billed_percent], 2)
+    mask_billed_percent_not_100 = df_filtered_for_job_type[billed_percent] != 1
 
     df_percent_filter = df_filtered_for_job_type[mask_awd_amt_not_zero & mask_paid_closed_blank & mask_awd_not_nan &
                                                  mask_billed_percent_not_100].copy()
@@ -25,12 +30,12 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
     # Certain cols to keep for final
     if for_fs:
         cols_to_keep = ['Type:  JOC, CC, HB', 'Contract', 'Proj. #', 'Prob. C/O #', 'Client', 'Location', 'Description',
-                        'Awd', 'Awd $', 'Substantial Complete', 'Billed Date', 'Bill $', 'Billed %', 'Comment',
+                        'Awd', 'Awd $', 'Substantial Complete', 'Billed Date', 'Bill $', billed_percent, 'Comment',
                         'Total Paid', '$ Outstanding', 'Balance WIP']
     else:
         cols_to_keep = ['Type:  JOC, CC, HB', 'Contract', 'Proj. #', 'Prob. C/O #', 'Client', 'Location', 'Description',
                         'Awd', 'Awd $', 'Contract Comp. Date', 'Substantial Complete', 'Billed Date', 'Bill $',
-                        'Billed %', 'Comment', 'Total Paid', '$ Outstanding', 'Balance WIP']
+                        billed_percent, 'Comment', 'Total Paid', '$ Outstanding', 'Balance WIP']
 
     missing_columns = [col for col in cols_to_keep if col not in df_percent_filter.columns]
 
@@ -44,7 +49,7 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
 
     # Rename the columns to match what is final
     final_df.rename(columns={'Type:  JOC, CC, HB': 'Type: \nJOC, HB', 'Client': 'Facility Name', 'Location': 'Address',
-                             'Billed %': '%', 'Prob. C/O #': 'Prob. \n C/O #'},
+                             billed_percent: '%', 'Prob. C/O #': 'Prob. \n C/O #'},
                     inplace=True)
 
     if final_df.empty:
@@ -70,6 +75,11 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
 
 
 def create_outstanding_df(df: pd.DataFrame, title: str, filename: str, month: str = '') -> pd.DataFrame:
+    if title == 'LLC USPS Outstanding':
+        billed_percent = '%'
+    else:
+        billed_percent = 'Billed %'
+
     # Filter so job type is only JOC or HB
     mask_job_type = df['Type:  JOC, CC, HB'].str.contains('JOC|HB', case=False, na=False)
     df_filtered_for_job_type = df[mask_job_type].copy()
@@ -87,7 +97,7 @@ def create_outstanding_df(df: pd.DataFrame, title: str, filename: str, month: st
 
     df_filtered_billed_date['Bill $'] = round(df_filtered_billed_date['Bill $'], 2)
     df_filtered_billed_date['$ Previously Paid'] = round(df_filtered_billed_date['$ Previously Paid'], 2)
-    df_filtered_billed_date['$ Paid Current Month'] = round(df_filtered_billed_date['$ Paid Current Month'], 2)
+    df_filtered_billed_date['$ Paid Current Month'] = round(df_filtered_billed_date['$ Paid Current Month'].astype(float), 2)
 
     # Filter for Billed - Paid > 0:
     df_filtered_billed_date['Billed-Paid'] = (df_filtered_billed_date['Bill $'] -
@@ -101,7 +111,7 @@ def create_outstanding_df(df: pd.DataFrame, title: str, filename: str, month: st
 
     # Certain cols to keep for final
     cols_to_keep = ['Type:  JOC, CC, HB', 'Contract', 'Proj. #', 'Prob. C/O #', 'Client', 'Location', 'Description',
-                    'Awd', 'Awd $', 'Substantial Complete', 'Billed Date', 'Bill $', 'Billed %', 'Comment',
+                    'Awd', 'Awd $', 'Substantial Complete', 'Billed Date', 'Bill $', billed_percent, 'Comment',
                     '$ Paid', 'Billed-Paid']
 
     missing_columns = [col for col in cols_to_keep if col not in final_df.columns]
@@ -114,7 +124,7 @@ def create_outstanding_df(df: pd.DataFrame, title: str, filename: str, month: st
 
     # Rename the columns to match what is final
     final_df.rename(columns={'Type:  JOC, CC, HB': 'Type: \nJOC, HB', 'Client': 'Facility Name', 'Location': 'Address',
-                             'Billed %': '%', 'Prob. C/O #': 'Prob. \n C/O #', 'Billed-Paid': 'Balance Due'},
+                             billed_percent: '%', 'Prob. C/O #': 'Prob. \n C/O #', 'Billed-Paid': 'Balance Due'},
                     inplace=True)
 
     if final_df.empty:
@@ -144,10 +154,15 @@ def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> p
     df_filtered_for_job_type = df[mask_job_type].copy()
     df_filtered_for_job_type.reset_index(drop=True, inplace=True)
 
+    if title == 'LLC USPS Paid':
+        billed_percent = '%'
+    else:
+        billed_percent = 'Billed %'
+
     df_filtered_for_job_type['Paid/   Closed'] = pd.to_datetime(df_filtered_for_job_type['Paid/   Closed'])
     mask_current_month_date = df_filtered_for_job_type['Paid/   Closed'].dt.month == MONTH_TO_NUMBER[month]
-    df_filtered_for_job_type['Billed %'] = round(df_filtered_for_job_type['Billed %'], 2)
-    mask_billed_percent = df_filtered_for_job_type['Billed %'] == 1
+    df_filtered_for_job_type[billed_percent] = round(df_filtered_for_job_type[billed_percent], 2)
+    mask_billed_percent = df_filtered_for_job_type[billed_percent] == 1
     mask_paid_current_month_has_value = ((df_filtered_for_job_type['$ Paid Current Month'] != 0) &
                                          (~df_filtered_for_job_type['$ Paid Current Month'].isna()))
     mask_date_empty = df_filtered_for_job_type['Paid/   Closed'].isna()
@@ -160,7 +175,7 @@ def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> p
 
     # Certain cols to keep for final
     cols_to_keep = ['Type:  JOC, CC, HB', 'Contract', 'Proj. #', 'Prob. C/O #', 'Client', 'Location', 'Description',
-                    'Awd', 'Awd $', 'Substantial Complete', 'Billed Date', 'Bill $', 'Billed %', 'Comment',
+                    'Awd', 'Awd $', 'Substantial Complete', 'Billed Date', 'Bill $', billed_percent, 'Comment',
                     '$ Previously Paid', '$ Paid Current Month', 'Balance Due', 'Paid/   Closed']
 
     # Remove any that haven't been awarded yet
@@ -180,7 +195,7 @@ def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> p
 
     # Rename the columns to match what is final
     final_df.rename(columns={'Type:  JOC, CC, HB': 'Type: \nJOC, HB', 'Client': 'Facility Name', 'Location': 'Address',
-                             '$ Paid Current Month': '$ Paid', 'Billed %': '%', 'Paid/   Closed': 'Paid/Closed',
+                             '$ Paid Current Month': '$ Paid', billed_percent: '%', 'Paid/   Closed': 'Paid/Closed',
                              'Prob. C/O #': 'Prob. \n C/O #'},
                     inplace=True)
     extra_title_row = {'Type: \nJOC, HB': title}
