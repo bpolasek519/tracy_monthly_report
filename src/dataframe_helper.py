@@ -95,6 +95,7 @@ def create_outstanding_df(df: pd.DataFrame, title: str, filename: str, month: st
     df_filtered_billed_date = df_filtered_paid_closed[~mask_billed_date_blank].copy()
     df_filtered_billed_date.reset_index(drop=True, inplace=True)
 
+    df_filtered_billed_date['Bill $'] = df_filtered_billed_date['Bill $'].astype(float)
     df_filtered_billed_date['Bill $'] = round(df_filtered_billed_date['Bill $'], 2)
     df_filtered_billed_date['$ Previously Paid'] = round(df_filtered_billed_date['$ Previously Paid'], 2)
     df_filtered_billed_date['$ Paid Current Month'] = round(df_filtered_billed_date['$ Paid Current Month'].astype(float), 2)
@@ -218,23 +219,22 @@ def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> p
 
 
 def create_cp_completed(df: pd.DataFrame, month: str):
-    # Confirming that the contract was awarded
-    mask_awarded = df['Awd'].isna()
-    awarded_df = df[~mask_awarded].copy()
+    pass
+    # TODO: Paid that month or 100% billed is completed
+    # TODO: Everything else is Active
 
     # Confirming that billed is 100%
-    masK_100_per = awarded_df['Billed %'] >= 1
-    billed_100_per = awarded_df[masK_100_per].copy()
+    mask_100_per = df['Billed %'] >= 1
+    mask_paid_current_month = df['Paid/   Closed'].dt.month == MONTH_TO_NUMBER[month]
+    mask_paid_null = df['Paid/   Closed'].isna()
 
-    # Paid/Closed is either current month or null
-    mask_paid_null = billed_100_per['Paid/   Closed'].isna()
-    mask_paid_current_month = billed_100_per['Paid/   Closed'].dt.month == MONTH_TO_NUMBER[month]
-    current_df = billed_100_per[mask_paid_current_month | mask_paid_null].copy()
+    completed_df = df[mask_100_per & (mask_paid_current_month | mask_paid_null)].copy()
+    completed_df.reset_index(drop=True, inplace=True)
 
-    unique_contracts = current_df['Contract '].unique()
-    if len(unique_contracts) == 1:
-        multiple_contracts = False
-    else:
-        multiple_contracts = True
+    mask_balance_due = df['Balance Due'] > 0
+    active_df = df[~mask_100_per & (mask_paid_current_month | mask_paid_null) & mask_balance_due].copy()
+    active_df.reset_index(drop=True, inplace=True)
 
-    return current_df, multiple_contracts
+    unique_contracts = df['Contract '].unique()
+
+    return completed_df, active_df, unique_contracts

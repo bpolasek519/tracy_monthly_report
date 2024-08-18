@@ -59,14 +59,43 @@ def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, f
 
 
 def create_choice_partners_report(hcde_file, year, month):
-    wb = Workbook()
-    sheet = wb.active
-
     hcde_df = e.read_excel_with_exception(f'{hcde_file}', sheet_name=f'{year}')
-    dh.create_cp_completed(hcde_df, month=month)
-    wr.create_cp_header(sheet)
+    completed_df, active_df, contract_list = dh.create_cp_completed(hcde_df, month=month)
 
-    return wb
+    for contract in contract_list:
+        if contract:
+            wb = Workbook()
+            sheet = wb.active
+
+            contract_completed_df = completed_df[completed_df['Contract '] == contract].copy()
+            contract_active_df = active_df[active_df['Contract '] == contract].copy()
+
+            rows_to_keep = ['Proj. #', 'Prob. C/O #', 'Client', 'Location', 'Description', 'PO Number', 'Awd $',
+                            "Builder's Risk/Bond Amount", 'Billed Date', 'Paid/   Closed']
+
+            contract_completed_df = contract_completed_df[rows_to_keep]
+            contract_active_df = contract_active_df[rows_to_keep]
+
+            renamed_col_dict = {
+                'Proj. #': 'Task Order',
+                'Prob. C/O #': 'C/O NO',
+                'Client': 'Customer Name',
+                'Description': 'Work Description',
+                'PO Number': 'Purchase Order #',
+                'Awd $': 'Funded Amount',
+                "Builder's Risk/Bond Amount": 'Bond Amount',
+                'Paid/   Closed': 'Paid Date'
+            }
+
+            contract_completed_df.rename(columns=renamed_col_dict, inplace=True)
+            contract_active_df.rename(columns=renamed_col_dict, inplace=True)
+
+            # TODO: Ask Tracy if they remove the billed date from the active list
+            # TODO: Dataframes should be done, just need to format the sheets
+
+            wr.create_cp_header(sheet)
+
+            return wb
 
 
 @app.route('/')

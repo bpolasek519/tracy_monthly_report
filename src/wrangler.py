@@ -8,6 +8,7 @@ import src.constants as con
 import src.dataframe_helper as dh
 from src.excel_styles import apply_column_widths, set_style, header_settings, alternate_color_fill, \
     center_style_the_headers, last_row_style, style_center_cols
+import datetime
 
 
 def create_llc_sheet(df: pd.DataFrame, wb: Workbook, llc_type: str, last_row_cols: List[str],
@@ -292,39 +293,5 @@ def retrieve_skipped_rows(blank_row, df_lists):
 
 
 def create_cp_header(sheet):
-    # Expand the width of the columns
-    start_width_col = 'A'
-    end_width_col = 'J'
-    default_width = 20
-
-    for col in range(ord(start_width_col), ord(end_width_col) + 1):
-        col_letter = chr(col)
-        sheet.column_dimensions[col_letter].width = default_width
-
-    # Add the first row header
-    sheet.merge_cells('A1:F1')
-    sheet['A1'] = 'Choice Partners Monthly Reporting Form'
-    title_font = Font(size=18, bold=True, name='Calibri')
-    center_alignment = Alignment(horizontal='center', vertical='center')
-    sheet['A1'].font = title_font
-    sheet['A1'].alignment = center_alignment
-
-    # Add the second row
-    sheet.merge_cells('A2:F2')
-    sheet['A2'] = 'When complete email to FacilityReporting@ChoicePartners.org'
-    subheader_font = Font(size=11, bold=True, underline=True, name='Calibri')
-    sheet['A2'].font = subheader_font
-    sheet['A2'].alignment = center_alignment
-
-    # Add the third row
-    sheet.merge_cells('A3:F3')
-    sheet['A3'] = 'Name File VendorName ReportMonth#Year#.xlsx (ex. ABC 9 2023.xlsx)'
-    naming_font = Font(size=11, color='red', name='Calibri')
-    sheet['A3'].font = naming_font
-    sheet['A3'].alignment = center_alignment
-
-
-
-
-
+    pass
 
