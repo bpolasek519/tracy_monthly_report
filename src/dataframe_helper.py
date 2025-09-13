@@ -2,8 +2,9 @@ from src.constants import MONTH_TO_NUMBER
 import pandas as pd
 
 
-def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', for_fs: bool = True) -> pd.DataFrame:
-    if title == 'LLC USPS WIP':
+def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '',
+                  for_fs: bool = True) -> pd.DataFrame:
+    if 'LLC USPS WIP' in title:
         billed_percent = '%'
     else:
         billed_percent = 'Billed %'
@@ -75,7 +76,7 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '', 
 
 
 def create_outstanding_df(df: pd.DataFrame, title: str, filename: str, month: str = '') -> pd.DataFrame:
-    if title == 'LLC USPS Outstanding':
+    if 'LLC USPS Outstanding' in title:
         billed_percent = '%'
     else:
         billed_percent = 'Billed %'
@@ -155,7 +156,7 @@ def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> p
     df_filtered_for_job_type = df[mask_job_type].copy()
     df_filtered_for_job_type.reset_index(drop=True, inplace=True)
 
-    if title == 'LLC USPS Paid':
+    if 'LLC USPS Paid' in title:
         billed_percent = '%'
     else:
         billed_percent = 'Billed %'
@@ -190,9 +191,6 @@ def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> p
                         f'Check to see if the column was renamed to something else or removed.')
     else:
         final_df = final_df[cols_to_keep].copy()
-
-    if final_df.empty:
-        return final_df
 
     # Rename the columns to match what is final
     final_df.rename(columns={'Type:  JOC, CC, HB': 'Type: \nJOC, HB', 'Client': 'Facility Name', 'Location': 'Address',

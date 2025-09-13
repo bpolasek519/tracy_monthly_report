@@ -12,6 +12,7 @@ app = Flask(__name__)
 
 
 def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, friendswood_file, month, year):
+    llc_new_df = e.read_excel_with_exception(f"{usps_file}", sheet_name=f"{year} LLC New Contract")
     usps_fmd_df = e.read_excel_with_exception(f'{usps_file}', sheet_name=f'{year} LTD (FMD)')
     hdce_df = e.read_excel_with_exception(f'{hcde_file}', sheet_name=f'{year}')
     llc_df = e.read_excel_with_exception(f'{usps_file}', sheet_name=f'{year} FMD - DPFS LLC')
@@ -42,15 +43,19 @@ def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, f
                        columns_to_exclude_from_generic_styles=con.FS_WIP_COLS_TO_EXCLUDE)
 
     # Create LLC Paid
-    wr.create_llc_sheet(llc_df, wb, llc_type='Paid', last_row_cols=con.LLC_PAID_LAST_ROW_COLS,
+    llc_dict = {
+        "LLC USPS": llc_df,
+        "New Contract LLC USPS": llc_new_df
+    }
+    wr.create_llc_sheet(llc_dict, wb, llc_type='Paid', last_row_cols=con.LLC_PAID_LAST_ROW_COLS,
                         cols_to_exclude=con.LLC_PAID_COLS_TO_EXCLUDE, month=month, year=year)
 
     # Create LLC Outstanding
-    wr.create_llc_sheet(llc_df, wb, llc_type='Outstanding', last_row_cols=con.LLC_OUTSTANDING_LAST_ROW_COLS,
+    wr.create_llc_sheet(llc_dict, wb, llc_type='Outstanding', last_row_cols=con.LLC_OUTSTANDING_LAST_ROW_COLS,
                         cols_to_exclude=con.LLC_OUTSTANDING_COLS_TO_EXCLUDE, month=month, year=year)
 
     # Create LLC WIP
-    wr.create_llc_sheet(llc_df, wb, llc_type='WIP', last_row_cols=con.LLC_WIP_LAST_ROW_COLS,
+    wr.create_llc_sheet(llc_dict, wb, llc_type='WIP', last_row_cols=con.LLC_WIP_LAST_ROW_COLS,
                         cols_to_exclude=con.LLC_WIP_COLS_TO_EXCLUDE, month=month, year=year)
 
     wb.remove_sheet(wb.get_sheet_by_name('Sheet'))

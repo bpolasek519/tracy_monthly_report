@@ -11,15 +11,30 @@ from src.excel_styles import apply_column_widths, set_style, header_settings, al
 import datetime
 
 
-def create_llc_sheet(df: pd.DataFrame, wb: Workbook, llc_type: str, last_row_cols: List[str],
+def create_llc_sheet(dfs: dict, wb: Workbook, llc_type: str, last_row_cols: List[str],
                      cols_to_exclude: List[str], month: str, year: str) -> None:
     # Create a DataFrame
-    if llc_type == 'WIP':
-        final_df = dh.create_wip_df(df=df, title='LLC USPS WIP', for_fs=False, filename='USPS')
-    elif llc_type == 'Outstanding':
-        final_df = dh.create_outstanding_df(df, title='LLC USPS Outstanding', filename='USPS')
-    else:
-        final_df = dh.create_paid_df(df, 'LLC USPS Paid', month=month, filename='USPS')
+    final_df = pd.DataFrame()
+    for title, df in dfs.items():
+        if llc_type == 'WIP':
+            temp_final_df = dh.create_wip_df(df=df, title=f'{title} {llc_type}', for_fs=False, filename='USPS')
+        elif llc_type == 'Outstanding':
+            temp_final_df = dh.create_outstanding_df(df, title=f'{title} {llc_type}', filename='USPS')
+        else:
+            temp_final_df = dh.create_paid_df(df, f'{title} {llc_type}', month=month, filename='USPS')
+
+        if temp_final_df.empty:
+            # Add title row only if df is empty
+            temp_final_df = pd.DataFrame(
+                [[f'{title} {llc_type}'] + [""] * (len(temp_final_df.columns) - 1)],
+                columns=temp_final_df.columns
+            )
+
+        # Always add a blank row after
+        empty_row = pd.DataFrame([[""] * len(temp_final_df.columns)], columns=temp_final_df.columns)
+
+        combined = pd.concat([temp_final_df, empty_row], ignore_index=True)
+        final_df = pd.concat([final_df, combined], ignore_index=True)
 
     # Create a new sheet within the Workbook
     ws = wb.create_sheet(title=f'LLC {llc_type}')

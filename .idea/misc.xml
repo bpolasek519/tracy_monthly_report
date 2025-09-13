@@ -4,4 +4,7 @@
     <option name="sdkName" value="Pipenv (tracy_monthly_report)" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Pipenv (tracy_monthly_report)" project-jdk-type="Python SDK" />
+  <component name="PyCharmProfessionalAdvertiser">
+    <option name="shown" value="true" />
+  </component>
 </project>
