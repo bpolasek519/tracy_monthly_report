@@ -1,10 +1,12 @@
+from typing import final
+
 from src.constants import MONTH_TO_NUMBER
 import pandas as pd
 
 
 def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '',
-                  for_fs: bool = True) -> pd.DataFrame:
-    if 'LLC USPS WIP' in title:
+                  for_fs: bool = True) -> dict:
+    if 'LLC USPS' in title:
         billed_percent = '%'
     else:
         billed_percent = 'Billed %'
@@ -56,27 +58,52 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '',
     if final_df.empty:
         return final_df
 
-    extra_title_row = {'Type: \nJOC, HB': title}
-    final_df.loc[-1] = extra_title_row
-    final_df.index = final_df.index + 1
-    final_df = final_df.sort_index()
+    # Split into NTE vs Non-NTE
+    final_nte_df = final_df[final_df["Comment"].str.contains("NTE", case=True, na=False)].copy()
+    final_non_nte_df = final_df[~final_df["Comment"].str.contains("NTE", case=True, na=False)].copy()
 
+    # Create title rows
+    nte_title_row = {'Type: \nJOC, HB': f"{title} NTE"}
+    non_nte_title_row = {'Type: \nJOC, HB': title}
+
+    # Insert title row at the top of each dataframe
+    if not final_nte_df.empty:
+        final_nte_df.loc[-1] = nte_title_row
+        final_nte_df.index = final_nte_df.index + 1
+        final_nte_df = final_nte_df.sort_index()
+
+    if not final_non_nte_df.empty:
+        final_non_nte_df.loc[-1] = non_nte_title_row
+        final_non_nte_df.index = final_non_nte_df.index + 1
+        final_non_nte_df = final_non_nte_df.sort_index()
+
+    final_df_list = {
+        "NTE": final_nte_df,
+        "Non-NTE": final_non_nte_df
+    }
+    final_with_total = {}
     # Adds the total amount of money
-    awd_sum = final_df['Awd $'].sum()
-    bill_sum = final_df['Bill $'].sum()
-    paid_sum = final_df['Total Paid'].sum()
-    outstanding_sum = final_df['$ Outstanding'].sum()
-    balance_due_sum = final_df['Balance WIP'].sum()
-    total_row = {'Type: \nJOC, HB': f'Total {title}', 'Awd $': awd_sum, 'Bill $': bill_sum,
-                 'Total Paid': paid_sum, '$ Outstanding': outstanding_sum, 'Balance WIP': balance_due_sum}
-    total_row_df = pd.DataFrame(total_row, index=[0])
-    final_df = pd.concat([final_df, total_row_df], ignore_index=True)
+    for label, df in final_df_list.items():
+        if df.empty:
+            final_with_total[label] = df
+            continue
 
-    return final_df
+        awd_sum = df['Awd $'].sum()
+        bill_sum = df['Bill $'].sum()
+        paid_sum = df['Total Paid'].sum()
+        outstanding_sum = df['$ Outstanding'].sum()
+        balance_due_sum = df['Balance WIP'].sum()
+        total_row = {'Type: \nJOC, HB': f'Total {title}', 'Awd $': awd_sum, 'Bill $': bill_sum,
+                     'Total Paid': paid_sum, '$ Outstanding': outstanding_sum, 'Balance WIP': balance_due_sum}
+        total_row_df = pd.DataFrame(total_row, index=[0])
+        df = pd.concat([df, total_row_df], ignore_index=True)
+        final_with_total[label] = df
+
+    return final_with_total
 
 
-def create_outstanding_df(df: pd.DataFrame, title: str, filename: str, month: str = '') -> pd.DataFrame:
-    if 'LLC USPS Outstanding' in title:
+def create_outstanding_df(df: pd.DataFrame, title: str, filename: str, month: str = '') -> dict:
+    if 'LLC USPS' in title:
         billed_percent = '%'
     else:
         billed_percent = 'Billed %'
@@ -130,33 +157,60 @@ def create_outstanding_df(df: pd.DataFrame, title: str, filename: str, month: st
                     inplace=True)
 
     if final_df.empty:
-        return final_df
+        return {"NTE": final_df,
+                "Non-NTE": final_df}
 
-    extra_title_row = {'Type: \nJOC, HB': title}
-    final_df.loc[-1] = extra_title_row
-    final_df.index = final_df.index + 1
-    final_df = final_df.sort_index()
+    # Split into NTE vs Non-NTE
+    final_nte_df = final_df[final_df["Comment"].str.contains("NTE", case=True, na=False)].copy()
+    final_non_nte_df = final_df[~final_df["Comment"].str.contains("NTE", case=True, na=False)].copy()
+
+    # Create title rows
+    nte_title_row = {'Type: \nJOC, HB': f"{title} NTE"}
+    non_nte_title_row = {'Type: \nJOC, HB': title}
+
+    # Insert title row at the top of each dataframe
+    if not final_nte_df.empty:
+        final_nte_df.loc[-1] = nte_title_row
+        final_nte_df.index = final_nte_df.index + 1
+        final_nte_df = final_nte_df.sort_index()
+
+    if not final_non_nte_df.empty:
+        final_non_nte_df.loc[-1] = non_nte_title_row
+        final_non_nte_df.index = final_non_nte_df.index + 1
+        final_non_nte_df = final_non_nte_df.sort_index()
+
+    final_df_list = {
+        "NTE": final_nte_df,
+        "Non-NTE": final_non_nte_df
+    }
+    final_with_total = {}
 
     # Adds the total amount of money
-    awd_sum = final_df['Awd $'].sum()
-    bill_sum = final_df['Bill $'].sum()
-    paid_sum = final_df['$ Paid'].sum()
-    balance_due_sum = final_df['Balance Due'].sum()
-    total_row = {'Type: \nJOC, HB': f'Total {title}', 'Awd $': awd_sum, 'Bill $': bill_sum,
-                 '$ Paid': paid_sum, 'Balance Due': balance_due_sum}
-    total_row_df = pd.DataFrame(total_row, index=[0])
-    final_df = pd.concat([final_df, total_row_df], ignore_index=True)
+    for label, df in final_df_list.items():
+        if df.empty:
+            final_with_total[label] = df
+            continue
 
-    return final_df
+        awd_sum = df['Awd $'].sum()
+        bill_sum = df['Bill $'].sum()
+        paid_sum = df['$ Paid'].sum()
+        balance_due_sum = df['Balance Due'].sum()
+        total_row = {'Type: \nJOC, HB': f'Total {title}', 'Awd $': awd_sum, 'Bill $': bill_sum,
+                     '$ Paid': paid_sum, 'Balance Due': balance_due_sum}
+        total_row_df = pd.DataFrame(total_row, index=[0])
+        df = pd.concat([df, total_row_df], ignore_index=True)
+        final_with_total[label] = df
+
+    return final_with_total
 
 
-def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> pd.DataFrame:
+def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> dict:
     # Filter so job type is only JOC or HB
     mask_job_type = df['Type:  JOC, CC, HB'].str.contains('JOC|HB', case=False, na=False)
     df_filtered_for_job_type = df[mask_job_type].copy()
     df_filtered_for_job_type.reset_index(drop=True, inplace=True)
 
-    if 'LLC USPS Paid' in title:
+    if 'LLC USPS' in title:
         billed_percent = '%'
     else:
         billed_percent = 'Billed %'
@@ -197,23 +251,54 @@ def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> p
                              '$ Paid Current Month': '$ Paid', billed_percent: '%', 'Paid/   Closed': 'Paid/Closed',
                              'Prob. C/O #': 'Prob. \n C/O #'},
                     inplace=True)
-    extra_title_row = {'Type: \nJOC, HB': title}
-    final_df.loc[-1] = extra_title_row
-    final_df.index = final_df.index + 1
-    final_df = final_df.sort_index()
+
+    if final_df.empty:
+        return {"NTE": final_df,
+                "Non-NTE": final_df}
+
+    # Split into NTE vs Non-NTE
+    final_nte_df = final_df[final_df["Comment"].str.contains("NTE", case=True, na=False)].copy()
+    final_non_nte_df = final_df[~final_df["Comment"].str.contains("NTE", case=True, na=False)].copy()
+
+    # Create title rows
+    nte_title_row = {'Type: \nJOC, HB': f"{title} NTE"}
+    non_nte_title_row = {'Type: \nJOC, HB': title}
+
+    # Insert title row at the top of each dataframe
+    if not final_nte_df.empty:
+        final_nte_df.loc[-1] = nte_title_row
+        final_nte_df.index = final_nte_df.index + 1
+        final_nte_df = final_nte_df.sort_index()
+
+    if not final_non_nte_df.empty:
+        final_non_nte_df.loc[-1] = non_nte_title_row
+        final_non_nte_df.index = final_non_nte_df.index + 1
+        final_non_nte_df = final_non_nte_df.sort_index()
+
+    final_df_list = {
+        "NTE": final_nte_df,
+        "Non-NTE": final_non_nte_df
+    }
+    final_with_total = {}
 
     # Adds the total amount of money
-    awd_sum = final_df['Awd $'].sum()
-    bill_sum = final_df['Bill $'].sum()
-    prev_sum = final_df['$ Previously Paid'].sum()
-    paid_sum = final_df['$ Paid'].sum()
-    balance_due_sum = final_df['Balance Due'].sum()
-    total_row = {'Type: \nJOC, HB': f'Total {title}', 'Awd $': awd_sum, 'Bill $': bill_sum,
-                 '$ Previously Paid': prev_sum, '$ Paid': paid_sum, 'Balance Due': balance_due_sum}
-    total_row_df = pd.DataFrame(total_row, index=[0])
-    final_df = pd.concat([final_df, total_row_df], ignore_index=True)
+    for label, df in final_df_list.items():
+        if df.empty:
+            final_with_total[label] = df
+            continue
 
-    return final_df
+        awd_sum = df['Awd $'].sum()
+        bill_sum = df['Bill $'].sum()
+        prev_sum = df['$ Previously Paid'].sum()
+        paid_sum = df['$ Paid'].sum()
+        balance_due_sum = df['Balance Due'].sum()
+        total_row = {'Type: \nJOC, HB': f'Total {title}', 'Awd $': awd_sum, 'Bill $': bill_sum,
+                     '$ Previously Paid': prev_sum, '$ Paid': paid_sum, 'Balance Due': balance_due_sum}
+        total_row_df = pd.DataFrame(total_row, index=[0])
+        df = pd.concat([df, total_row_df], ignore_index=True)
+        final_with_total[label] = df
+
+    return final_with_total
 
 
 def create_cp_completed(df: pd.DataFrame, month: str):

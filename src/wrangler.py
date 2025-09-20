@@ -13,28 +13,101 @@ import datetime
 
 def create_llc_sheet(dfs: dict, wb: Workbook, llc_type: str, last_row_cols: List[str],
                      cols_to_exclude: List[str], month: str, year: str) -> None:
-    # Create a DataFrame
-    final_df = pd.DataFrame()
+    non_nte_list = []
+    nte_list = []
     for title, df in dfs.items():
         if llc_type == 'WIP':
-            temp_final_df = dh.create_wip_df(df=df, title=f'{title} {llc_type}', for_fs=False, filename='USPS')
+            df_dict = dh.create_wip_df(df=df, title=f'{title} {llc_type}', for_fs=False, filename='USPS')
         elif llc_type == 'Outstanding':
-            temp_final_df = dh.create_outstanding_df(df, title=f'{title} {llc_type}', filename='USPS')
+            df_dict = dh.create_outstanding_df(df, title=f'{title} {llc_type}', filename='USPS')
         else:
-            temp_final_df = dh.create_paid_df(df, f'{title} {llc_type}', month=month, filename='USPS')
+            df_dict = dh.create_paid_df(df, f'{title} {llc_type}', month=month, filename='USPS')
 
-        if temp_final_df.empty:
-            # Add title row only if df is empty
-            temp_final_df = pd.DataFrame(
-                [[f'{title} {llc_type}'] + [""] * (len(temp_final_df.columns) - 1)],
-                columns=temp_final_df.columns
-            )
+        # Skip if both sections are empty
+        if df_dict["Non-NTE"].empty and df_dict["NTE"].empty:
+            continue
 
-        # Always add a blank row after
-        empty_row = pd.DataFrame([[""] * len(temp_final_df.columns)], columns=temp_final_df.columns)
+        # Add both outputs to the lists
+        non_nte_list.append(df_dict["Non-NTE"])
+        nte_list.append(df_dict["NTE"])
 
-        combined = pd.concat([temp_final_df, empty_row], ignore_index=True)
-        final_df = pd.concat([final_df, combined], ignore_index=True)
+    # Create a blank row template
+    first_non_empty_df = next((df for df in non_nte_list + nte_list if not df.empty), None)
+    if first_non_empty_df is not None:
+        sample_cols = first_non_empty_df.columns
+    else:
+        # fallback to expected column names
+        sample_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #', 'Client', 'Location',
+                       'Description', 'Awd', 'Awd $', 'Substantial Complete', 'Billed Date', 'Bill $',
+                       'Billed %', 'Comment', 'Total Paid', '$ Outstanding', 'Balance WIP']
+
+    blank_row = pd.DataFrame({col: [np.nan] for col in sample_cols})
+
+    def interleave_with_blank(dfs_list):
+        dfs_with_blanks = []
+        for df in dfs_list:
+            if df.empty:
+                continue  # skip completely empty dfs
+            dfs_with_blanks.append(df)
+            dfs_with_blanks.append(pd.DataFrame({col: [np.nan] for col in df.columns}))
+
+        if not dfs_with_blanks:
+            # return an empty DataFrame with the expected columns
+            return pd.DataFrame(columns=dfs_list[0].columns if dfs_list else sample_cols)
+
+        return pd.concat(dfs_with_blanks, ignore_index=True)
+
+    # Build Non-NTE section
+    non_nte_df = interleave_with_blank(non_nte_list)
+
+    # --- NEW total calculation using only the last row of each DataFrame ---
+    last_rows = [df.iloc[-1] for df in non_nte_list if not df.empty]
+
+    if last_rows:
+        last_rows_df = pd.DataFrame(last_rows)
+        non_nte_total = {col: last_rows_df[col].sum() if col in last_row_cols else np.nan
+                         for col in last_rows_df.columns}
+    else:
+        # If no data, create a dict of NaNs for all columns
+        non_nte_total = {col: np.nan for col in non_nte_df.columns}
+
+    non_nte_total["Type: \nJOC, HB"] = f"Total {llc_type} {month} {year}"
+    non_nte_total_df = pd.DataFrame([non_nte_total])
+    # --- END NEW total calculation ---
+
+    non_nte_section = pd.concat(
+        [non_nte_df, non_nte_total_df, blank_row],
+        ignore_index=True
+    )
+
+    # Build NTE section
+    nte_df = interleave_with_blank(nte_list)
+
+    # Sum only the last row of each DataFrame
+    last_rows_nte = [df.iloc[-1] for df in nte_list if not df.empty]
+    if last_rows_nte:
+        last_rows_df = pd.DataFrame(last_rows_nte)
+        nte_total = {col: last_rows_df[col].sum() if col in last_row_cols else np.nan
+                     for col in last_rows_df.columns}
+    else:
+        nte_total = {col: np.nan for col in nte_df.columns}
+
+    nte_total["Type: \nJOC, HB"] = f"Total NTE {llc_type} {month} {year}"
+    nte_total_df = pd.DataFrame([nte_total])
+
+    nte_section = pd.concat(
+        [nte_df, nte_total_df, blank_row],
+        ignore_index=True
+    )
+
+    # Final combined DataFrame
+    final_df = pd.concat([non_nte_section, nte_section], ignore_index=True)
+
+    final_df.reset_index(drop=True, inplace=True)
+
+    if final_df.empty:
+        print(f"No data to write for {llc_type}, skipping sheet creation.")
+        return
 
     # Create a new sheet within the Workbook
     ws = wb.create_sheet(title=f'LLC {llc_type}')
@@ -63,7 +136,7 @@ def create_llc_sheet(dfs: dict, wb: Workbook, llc_type: str, last_row_cols: List
         last_row_style(final_df, last_row, last_row_style_cols, ws)
 
         # Apply center alignment style to specific columns
-        center_algined_cols = ['Type: \nJOC, HB', 'Contract', 'Proj. #', 'Prob. \n C/O #']
+        center_algined_cols = ['Contract', 'Proj. #', 'Prob. \n C/O #']
         style_center_cols(center_algined_cols, final_df, ws)
 
         # Apply general styling to the cells in the sheet

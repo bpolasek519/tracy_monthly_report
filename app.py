@@ -45,7 +45,7 @@ def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, f
     # Create LLC Paid
     llc_dict = {
         "LLC USPS": llc_df,
-        "New Contract LLC USPS": llc_new_df
+        "LLC USPS 2025": llc_new_df
     }
     wr.create_llc_sheet(llc_dict, wb, llc_type='Paid', last_row_cols=con.LLC_PAID_LAST_ROW_COLS,
                         cols_to_exclude=con.LLC_PAID_COLS_TO_EXCLUDE, month=month, year=year)
