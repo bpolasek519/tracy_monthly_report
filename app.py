@@ -26,20 +26,20 @@ def read_usps_report(usps_file, hcde_file, misc_file, buyboard_file, pca_file, f
     # Create FS Paid
     wr.create_fs_sheet(usps_df=usps_fmd_df, hcde_df=hdce_df, misc_df=misc_df, buyboard_df=buyboard_df,
                        pca_df=pca_df, friendswood_df=friendswood_df, wb=wb, month=month, year=year, fs_type='Paid',
-                       df_creation_func=dh.create_paid_df, last_row_columns=con.FS_PAID_LAST_ROW_COLS,
+                       df_creation_func=dh.create_fs_paid_df, last_row_columns=con.FS_PAID_LAST_ROW_COLS,
                        columns_to_exclude_from_generic_styles=con.FS_PAID_COLS_TO_EXCLUDE)
 
     # Create FS Outstanding
     wr.create_fs_sheet(usps_df=usps_fmd_df, hcde_df=hdce_df, misc_df=misc_df, buyboard_df=buyboard_df,
                        pca_df=pca_df, friendswood_df=friendswood_df, wb=wb, month=month, year=year,
-                       fs_type='Outstanding', df_creation_func=dh.create_outstanding_df,
+                       fs_type='Outstanding', df_creation_func=dh.create_fs_outstanding_df,
                        last_row_columns=con.FS_OUTSTANDING_LAST_ROW_COLS,
                        columns_to_exclude_from_generic_styles=con.FS_OUTSTANDING_COLS_TO_EXCLUDE)
 
     # Create FS WIP
     wr.create_fs_sheet(usps_df=usps_fmd_df, hcde_df=hdce_df, misc_df=misc_df, buyboard_df=buyboard_df,
                        pca_df=pca_df, friendswood_df=friendswood_df, wb=wb, month=month, year=year, fs_type='WIP',
-                       df_creation_func=dh.create_wip_df, last_row_columns=con.FS_WIP_LAST_ROW_COLS,
+                       df_creation_func=dh.create_fs_wip_df, last_row_columns=con.FS_WIP_LAST_ROW_COLS,
                        columns_to_exclude_from_generic_styles=con.FS_WIP_COLS_TO_EXCLUDE)
 
     # Create LLC Paid
