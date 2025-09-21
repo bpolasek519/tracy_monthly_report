@@ -38,7 +38,7 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '',
     else:
         cols_to_keep = ['Type:  JOC, CC, HB', 'Contract', 'Proj. #', 'Prob. C/O #', 'Client', 'Location', 'Description',
                         'Awd', 'Awd $', 'Contract Comp. Date', 'Substantial Complete', 'Billed Date', 'Bill $',
-                        billed_percent, 'Comment', 'Total Paid', '$ Outstanding', 'Balance WIP']
+                        billed_percent, 'Comment', 'Total Paid', '$ Outstanding', 'Balance WIP', "WO#"]
 
     missing_columns = [col for col in cols_to_keep if col not in df_percent_filter.columns]
 
@@ -59,8 +59,11 @@ def create_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '',
         return final_df
 
     # Split into NTE vs Non-NTE
-    final_nte_df = final_df[final_df["Comment"].str.contains("NTE", case=True, na=False)].copy()
-    final_non_nte_df = final_df[~final_df["Comment"].str.contains("NTE", case=True, na=False)].copy()
+    final_nte_df = final_df[final_df["WO#"].str.contains("NTE", case=True, na=False)].copy()
+    final_non_nte_df = final_df[~final_df["WO#"].str.contains("NTE", case=True, na=False)].copy()
+
+    final_non_nte_df.drop(columns=["WO#"], inplace=True)
+    final_nte_df.drop(columns=["WO#"], inplace=True)
 
     # Create title rows
     nte_title_row = {'Type: \nJOC, HB': f"{title} NTE"}

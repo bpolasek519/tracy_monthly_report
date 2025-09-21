@@ -101,7 +101,10 @@ def create_llc_sheet(dfs: dict, wb: Workbook, llc_type: str, last_row_cols: List
     )
 
     # Final combined DataFrame
-    final_df = pd.concat([non_nte_section, nte_section], ignore_index=True)
+    if llc_type == 'WIP':
+        final_df = pd.concat([non_nte_section, nte_section], ignore_index=True)
+    else:
+        final_df = non_nte_section
 
     final_df.reset_index(drop=True, inplace=True)
 
