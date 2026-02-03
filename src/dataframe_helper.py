@@ -333,7 +333,7 @@ def create_fs_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '
         billed_percent = 'Billed %'
 
     # Filter so job type is only JOC or HB
-    mask_job_type = df['Type:  JOC, CC, HB'].str.contains('JOC|HB', case=False, na=False)
+    mask_job_type = df['Type:  JOC, CC, HB'].astype("string").str.contains('JOC|HB', case=False, na=False)
     df_filtered_for_job_type = df[mask_job_type].copy()
     df_filtered_for_job_type.reset_index(drop=True, inplace=True)
 
@@ -405,7 +405,7 @@ def create_fs_outstanding_df(df: pd.DataFrame, title: str, filename: str, month:
         billed_percent = 'Billed %'
 
     # Filter so job type is only JOC or HB
-    mask_job_type = df['Type:  JOC, CC, HB'].str.contains('JOC|HB', case=False, na=False)
+    mask_job_type = df['Type:  JOC, CC, HB'].astype("string").str.contains('JOC|HB', case=False, na=False)
     df_filtered_for_job_type = df[mask_job_type].copy()
     df_filtered_for_job_type.reset_index(drop=True, inplace=True)
 
@@ -475,7 +475,7 @@ def create_fs_outstanding_df(df: pd.DataFrame, title: str, filename: str, month:
 
 def create_fs_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> pd.DataFrame:
     # Filter so job type is only JOC or HB
-    mask_job_type = df['Type:  JOC, CC, HB'].str.contains('JOC|HB', case=False, na=False)
+    mask_job_type = df['Type:  JOC, CC, HB'].astype("string").str.contains('JOC|HB', case=False, na=False)
     df_filtered_for_job_type = df[mask_job_type].copy()
     df_filtered_for_job_type.reset_index(drop=True, inplace=True)
 
