@@ -260,8 +260,9 @@ def create_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -> d
                 "Non-NTE": final_df}
 
     # Split into NTE vs Non-NTE
-    final_nte_df = final_df[final_df["Comment"].str.contains("NTE", case=True, na=False)].copy()
-    final_non_nte_df = final_df[~final_df["Comment"].str.contains("NTE", case=True, na=False)].copy()
+    comment_col = final_df["Comment"].astype("string")
+    final_nte_df = final_df[comment_col.str.contains("NTE", case=True, na=False)].copy()
+    final_non_nte_df = final_df[~comment_col.str.contains("NTE", case=True, na=False)].copy()
 
     # Create title rows
     nte_title_row = {'Type: \nJOC, HB': f"{title} NTE"}
