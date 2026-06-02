@@ -341,7 +341,10 @@ def create_fs_wip_df(df: pd.DataFrame, title: str, filename: str, month: str = '
     mask_awd_amt_not_zero = df_filtered_for_job_type['Awd $'] != 0
     mask_paid_closed_blank = df_filtered_for_job_type['Paid/   Closed'].isna()
     mask_awd_not_nan = ~df_filtered_for_job_type['Awd $'].isna()
-    df_filtered_for_job_type[billed_percent] = round(df_filtered_for_job_type[billed_percent], 2)
+    df_filtered_for_job_type[billed_percent] = (
+        pd.to_numeric(df_filtered_for_job_type[billed_percent], errors="coerce")
+        .round(2)
+    )
     mask_billed_percent_not_100 = df_filtered_for_job_type[billed_percent] != 1
 
     df_percent_filter = df_filtered_for_job_type[mask_awd_amt_not_zero & mask_paid_closed_blank & mask_awd_not_nan &
@@ -487,7 +490,10 @@ def create_fs_paid_df(df: pd.DataFrame, title: str, month: str, filename: str) -
 
     df_filtered_for_job_type['Paid/   Closed'] = pd.to_datetime(df_filtered_for_job_type['Paid/   Closed'])
     mask_current_month_date = df_filtered_for_job_type['Paid/   Closed'].dt.month == MONTH_TO_NUMBER[month]
-    df_filtered_for_job_type[billed_percent] = round(df_filtered_for_job_type[billed_percent], 2)
+    df_filtered_for_job_type[billed_percent] = (
+        pd.to_numeric(df_filtered_for_job_type[billed_percent], errors="coerce")
+        .round(2)
+    )
     mask_billed_percent = df_filtered_for_job_type[billed_percent] == 1
     mask_paid_current_month_has_value = ((df_filtered_for_job_type['$ Paid Current Month'] != 0) &
                                          (~df_filtered_for_job_type['$ Paid Current Month'].isna()))
